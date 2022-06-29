@@ -13,12 +13,26 @@ populate_winner_loser <- function(schedule_df){
         schedule_df$winner[i] <- schedule_df$away[i]
         schedule_df$loser[i] <- schedule_df$home[i]
         schedule_df$draw[i] <- F
+      } else {
+        schedule_df$home_penalty[i] <- sample(2:5, 1)
+        schedule_df$away_penalty[i] <- sample(2:5, 1)
+        if (schedule_df$home_penalty[i] == schedule_df$away_penalty[i]) {
+          schedule_df$home_penalty[i] <- schedule_df$home_penalty[i] + 1
+        }
+        if (schedule_df$home_penalty[i] > schedule_df$away_penalty[i]) {
+          schedule_df$winner[i] <- schedule_df$home[i]
+          schedule_df$loser[i] <- schedule_df$away[i]
+          schedule_df$draw[i] <- T
+        } else if (schedule_df$home_penalty[i] < schedule_df$away_penalty[i]) {
+          schedule_df$winner[i] <- schedule_df$away[i]
+          schedule_df$loser[i] <- schedule_df$home[i]
+          schedule_df$draw[i] <- T
+        }
       }
     }
   }
   return(schedule_df)
 }
-
 
 
 create_group_tables <- function(schedule_df){
@@ -35,6 +49,12 @@ create_group_tables <- function(schedule_df){
                                  GS = 0,
                                  GA = 0,
                                  GD = 0,
+                                 win_group_percent = NA,
+                                 advance_KO_percent = NA,
+                                 quarters_percent = NA,
+                                 semis_percent = NA,
+                                 finals_percent = NA,
+                                 champions_percent = NA,
                                  won_vs = "",
                                  lost_vs = "",
                                  drew_vs = "")
@@ -63,7 +83,7 @@ create_group_tables <- function(schedule_df){
                      if (team_games$winner[i] == team){
                          won_vs_string <- paste0(won_vs_string, ";", team_games$loser[i])
                        } else if (team_games$loser[i] == team) {
-                         lost_vs_string <- paste0(won_vs_string, ";", team_games$winner[i])
+                         lost_vs_string <- paste0(lost_vs_string, ";", team_games$winner[i])
                        } else if (team_games$winner[i] == "Draw" && team_games$home[i] == team) {
                          drew_vs_string <- paste0(drew_vs_string, ";", team_games$away[i])
                        } else if (team_games$winner[i] == "Draw" && team_games$away[i] == team) {
@@ -84,9 +104,42 @@ create_group_tables <- function(schedule_df){
              group_table$GD <- group_table$GS - group_table$GA
              group_table$Pts <- group_table$D + (3*group_table$W)
              group_table <- group_table[order(-group_table$Pts, -group_table$GD, -group_table$GS),]
-             
+
              group_tables[[group]] <- group_table
         }
    }
    return(group_tables)
  }
+
+summarize_group_results <- function(schedule_df) {
+  group_tables <- create_group_tables(schedule_df)
+  
+  winner_vec <- rep("", 8)
+  runner_up_vec <- rep("", 8)
+  
+  for (i in 1:8) {
+    winner_vec[i] <- group_tables[[i]]$country[1]
+    runner_up_vec[i] <- group_tables[[i]]$country[2]
+  }
+  
+  summary_df <- data.frame(group = LETTERS[1:8],
+                           winner = winner_vec,
+                           runner_up = runner_up_vec)
+  return(summary_df)
+}
+
+populate_percentates_groups <- function(group_tables, summary_table) {
+  for (i in 1:8) {
+    group_table <- group_tables[[i]]
+    for (j in 1:nrow(group_table)) {
+      team <- group_table$country[j]
+      group_tables[[i]]$win_group_percent[j] <- summary_table$group_win_perc[summary_table$country == team]
+      group_tables[[i]]$advance_KO_percent[j] <- summary_table$advance_perc[summary_table$country == team]
+      group_tables[[i]]$quarters_percent[j] <- summary_table$quarters_perc[summary_table$country == team]
+      group_tables[[i]]$semis_percent[j] <- summary_table$semis_perc[summary_table$country == team]
+      group_tables[[i]]$finals_percent[j] <- summary_table$finals_perc[summary_table$country == team]
+      group_tables[[i]]$champions_percent[j] <- summary_table$champions_perc[summary_table$country == team]
+    }
+  }
+  return(group_tables)
+}
