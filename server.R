@@ -4,10 +4,25 @@ source("global.R")
 server <- function(input, output, session) {
   
   schedule_import <- reactive({
-    import <- read.table("scores.csv", sep = ",", header = T)
+    if (!is.null(input$scores_csv)) {
+      import <- read.table(input$scores_csv$datapath, sep = ",", header = T)
+    } else {
+      import <- read.table("scores.csv", sep = ",", header = T)
+    }
     import <- populate_winner_loser(import)
     return(import)
     })
+  
+  scores_template <- reactive(read.table("empty_scores.csv", sep = ",", header = T))
+  
+  output$download_scores <-  downloadHandler(
+    filename = function() {
+      paste0("scorestemplate.csv")
+    },
+    content = function(file) {
+      write.csv(scores_template(), file, row.names = F)
+    }
+  )
   
   display_schedule <- reactive({
     if (input$team_pattern != "" && input$group_pattern != "") {
@@ -58,13 +73,24 @@ server <- function(input, output, session) {
     })
   })
   
+  prediction_df <- eventReactive(input$simulate_overall, {
+    create_time_course_predictions(schedule_import(), input$predict_overall_n)})
+  
+  
+  output$advance_KOs_plotly <- renderPlotly(create_plotly_KO_chance(prediction_df(), input$predict_overall_n))
+  output$champions_plotly <- renderPlotly(create_plotly_champions_chance(prediction_df(), input$predict_overall_n))
+  output$finals_plotly <- renderPlotly(create_plotly_finals_chance(prediction_df(), input$predict_overall_n))
+  output$semis_plotly <- renderPlotly(create_plotly_semis_chance(prediction_df(), input$predict_overall_n))
+  output$quarters_plotly <- renderPlotly(create_plotly_quarters_chance(prediction_df(), input$predict_overall_n))
+  output$win_group_plotly <- renderPlotly(create_plotly_group_win_chance(prediction_df(), input$predict_overall_n))
+  
   
   #knockout games
   game49_df <- reactive({
     row <- schedule_import()[schedule_import()$game_n == 49,]
     teams <- c(row$home[1], row$away[1])
     scores <- c(row$home_score[1], row$away_score[1])
-    pentalties <- c(row$home_penalty[1], row$away_penalty[1])
+    penalties <- c(row$home_penalty[1], row$away_penalty[1])
     return <- data.frame(round = row$group[1],
                          date = row$date[1],
                          TV = row$TV[1],
@@ -82,7 +108,7 @@ server <- function(input, output, session) {
     row <- schedule_import()[schedule_import()$game_n == 57,]
     teams <- c(row$home[1], row$away[1])
     scores <- c(row$home_score[1], row$away_score[1])
-    pentalties <- c(row$home_penalty[1], row$away_penalty[1])
+    penalties <- c(row$home_penalty[1], row$away_penalty[1])
     return <- data.frame(round = row$group[1],
                          date = row$date[1],
                          TV = row$TV[1],
@@ -99,7 +125,7 @@ server <- function(input, output, session) {
     row <- schedule_import()[schedule_import()$game_n == 50,]
     teams <- c(row$home[1], row$away[1])
     scores <- c(row$home_score[1], row$away_score[1])
-    pentalties <- c(row$home_penalty[1], row$away_penalty[1])
+    penalties <- c(row$home_penalty[1], row$away_penalty[1])
     return <- data.frame(round = row$group[1],
                          date = row$date[1],
                          TV = row$TV[1],
@@ -116,7 +142,7 @@ server <- function(input, output, session) {
     row <- schedule_import()[schedule_import()$game_n == 53,]
     teams <- c(row$home[1], row$away[1])
     scores <- c(row$home_score[1], row$away_score[1])
-    pentalties <- c(row$home_penalty[1], row$away_penalty[1])
+    penalties <- c(row$home_penalty[1], row$away_penalty[1])
     return <- data.frame(round = row$group[1],
                          date = row$date[1],
                          TV = row$TV[1],
@@ -133,7 +159,7 @@ server <- function(input, output, session) {
     row <- schedule_import()[schedule_import()$game_n == 58,]
     teams <- c(row$home[1], row$away[1])
     scores <- c(row$home_score[1], row$away_score[1])
-    pentalties <- c(row$home_penalty[1], row$away_penalty[1])
+    penalties <- c(row$home_penalty[1], row$away_penalty[1])
     return <- data.frame(round = row$group[1],
                          date = row$date[1],
                          TV = row$TV[1],
@@ -150,7 +176,7 @@ server <- function(input, output, session) {
     row <- schedule_import()[schedule_import()$game_n == 54,]
     teams <- c(row$home[1], row$away[1])
     scores <- c(row$home_score[1], row$away_score[1])
-    pentalties <- c(row$home_penalty[1], row$away_penalty[1])
+    penalties <- c(row$home_penalty[1], row$away_penalty[1])
     return <- data.frame(round = row$group[1],
                          date = row$date[1],
                          TV = row$TV[1],
@@ -167,7 +193,7 @@ server <- function(input, output, session) {
     row <- schedule_import()[schedule_import()$game_n == 51,]
     teams <- c(row$home[1], row$away[1])
     scores <- c(row$home_score[1], row$away_score[1])
-    pentalties <- c(row$home_penalty[1], row$away_penalty[1])
+    penalties <- c(row$home_penalty[1], row$away_penalty[1])
     return <- data.frame(round = row$group[1],
                          date = row$date[1],
                          TV = row$TV[1],
@@ -184,7 +210,7 @@ server <- function(input, output, session) {
     row <- schedule_import()[schedule_import()$game_n == 59,]
     teams <- c(row$home[1], row$away[1])
     scores <- c(row$home_score[1], row$away_score[1])
-    pentalties <- c(row$home_penalty[1], row$away_penalty[1])
+    penalties <- c(row$home_penalty[1], row$away_penalty[1])
     return <- data.frame(round = row$group[1],
                          date = row$date[1],
                          TV = row$TV[1],
@@ -201,7 +227,7 @@ server <- function(input, output, session) {
     row <- schedule_import()[schedule_import()$game_n == 52,]
     teams <- c(row$home[1], row$away[1])
     scores <- c(row$home_score[1], row$away_score[1])
-    pentalties <- c(row$home_penalty[1], row$away_penalty[1])
+    penalties <- c(row$home_penalty[1], row$away_penalty[1])
     return <- data.frame(round = row$group[1],
                          date = row$date[1],
                          TV = row$TV[1],
@@ -218,7 +244,7 @@ server <- function(input, output, session) {
     row <- schedule_import()[schedule_import()$game_n == 55,]
     teams <- c(row$home[1], row$away[1])
     scores <- c(row$home_score[1], row$away_score[1])
-    pentalties <- c(row$home_penalty[1], row$away_penalty[1])
+    penalties <- c(row$home_penalty[1], row$away_penalty[1])
     return <- data.frame(round = row$group[1],
                          date = row$date[1],
                          TV = row$TV[1],
@@ -235,7 +261,7 @@ server <- function(input, output, session) {
     row <- schedule_import()[schedule_import()$game_n == 60,]
     teams <- c(row$home[1], row$away[1])
     scores <- c(row$home_score[1], row$away_score[1])
-    pentalties <- c(row$home_penalty[1], row$away_penalty[1])
+    penalties <- c(row$home_penalty[1], row$away_penalty[1])
     return <- data.frame(round = row$group[1],
                          date = row$date[1],
                          TV = row$TV[1],
@@ -252,7 +278,7 @@ server <- function(input, output, session) {
     row <- schedule_import()[schedule_import()$game_n == 56,]
     teams <- c(row$home[1], row$away[1])
     scores <- c(row$home_score[1], row$away_score[1])
-    pentalties <- c(row$home_penalty[1], row$away_penalty[1])
+    penalties <- c(row$home_penalty[1], row$away_penalty[1])
     return <- data.frame(round = row$group[1],
                          date = row$date[1],
                          TV = row$TV[1],
@@ -269,7 +295,7 @@ server <- function(input, output, session) {
     row <- schedule_import()[schedule_import()$game_n == 61,]
     teams <- c(row$home[1], row$away[1])
     scores <- c(row$home_score[1], row$away_score[1])
-    pentalties <- c(row$home_penalty[1], row$away_penalty[1])
+    penalties <- c(row$home_penalty[1], row$away_penalty[1])
     return <- data.frame(round = row$group[1],
                          date = row$date[1],
                          TV = row$TV[1],
@@ -285,7 +311,7 @@ server <- function(input, output, session) {
     row <- schedule_import()[schedule_import()$game_n == 61,]
     teams <- c(row$home[1], row$away[1])
     scores <- c(row$home_score[1], row$away_score[1])
-    pentalties <- c(row$home_penalty[1], row$away_penalty[1])
+    penalties <- c(row$home_penalty[1], row$away_penalty[1])
     return <- data.frame(round = row$group[1],
                          date = row$date[1],
                          TV = row$TV[1],
@@ -302,7 +328,7 @@ server <- function(input, output, session) {
     row <- schedule_import()[schedule_import()$game_n == 62,]
     teams <- c(row$home[1], row$away[1])
     scores <- c(row$home_score[1], row$away_score[1])
-    pentalties <- c(row$home_penalty[1], row$away_penalty[1])
+    penalties <- c(row$home_penalty[1], row$away_penalty[1])
     return <- data.frame(round = row$group[1],
                          date = row$date[1],
                          TV = row$TV[1],
@@ -318,7 +344,7 @@ server <- function(input, output, session) {
     row <- schedule_import()[schedule_import()$game_n == 62,]
     teams <- c(row$home[1], row$away[1])
     scores <- c(row$home_score[1], row$away_score[1])
-    pentalties <- c(row$home_penalty[1], row$away_penalty[1])
+    penalties <- c(row$home_penalty[1], row$away_penalty[1])
     return <- data.frame(round = row$group[1],
                          date = row$date[1],
                          TV = row$TV[1],
@@ -335,7 +361,7 @@ server <- function(input, output, session) {
     row <- schedule_import()[schedule_import()$game_n == 64,]
     teams <- c(row$home[1], row$away[1])
     scores <- c(row$home_score[1], row$away_score[1])
-    pentalties <- c(row$home_penalty[1], row$away_penalty[1])
+    penalties <- c(row$home_penalty[1], row$away_penalty[1])
     return <- data.frame(round = row$group[1],
                          date = row$date[1],
                          TV = row$TV[1],
@@ -351,7 +377,7 @@ server <- function(input, output, session) {
     row <- schedule_import()[schedule_import()$game_n == 64,]
     teams <- c(row$home[1], row$away[1])
     scores <- c(row$home_score[1], row$away_score[1])
-    pentalties <- c(row$home_penalty[1], row$away_penalty[1])
+    penalties <- c(row$home_penalty[1], row$away_penalty[1])
     return <- data.frame(round = row$group[1],
                          date = row$date[1],
                          TV = row$TV[1],
@@ -368,7 +394,7 @@ server <- function(input, output, session) {
     row <- schedule_import()[schedule_import()$game_n == 63,]
     teams <- c(row$home[1], row$away[1])
     scores <- c(row$home_score[1], row$away_score[1])
-    pentalties <- c(row$home_penalty[1], row$away_penalty[1])
+    penalties <- c(row$home_penalty[1], row$away_penalty[1])
     return <- data.frame(round = row$group[1],
                          date = row$date[1],
                          TV = row$TV[1],

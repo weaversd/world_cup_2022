@@ -72,6 +72,7 @@ predict_group_stage_results <- function(schedule_df){
 }
 
 predict_n_tournaments <- function(schedule_df, n_reps){
+  
   group_stage_results_counter <- data.frame(country = team_list,
                                            group_wins = 0,
                                            group_runner_up = 0,
@@ -88,6 +89,15 @@ predict_n_tournaments <- function(schedule_df, n_reps){
                                            finals_perc = 0,
                                            champions_perc = 0)
   for (i in 1:n_reps) {
+    # percent_done <- round((i/n_reps) * 100)
+    # if (i > 0) {
+    #   previous_percent_done <- round(((i-1)/n_reps) * 100)
+    # } else {
+    #   previous_percent_done <- 0
+    # }
+    # if ((percent_done %% 10 == 0) && (previous_percent_done %% 10 !=0 )) {
+    #   print(paste0(percent_done, "% complete"))
+    # }
     group_stage_results <- predict_group_stage_results(schedule_df)
     group_stage_final_summary <- summarize_group_results(group_stage_results)
     ko_results <- predict_KOs(schedule_df, group_stage_final_summary)
@@ -166,9 +176,18 @@ predict_KOs <- function(schedule_df, group_stage_summary) {
     }
   }
   for (i in 1:8) {
-    game_score <- predict_game(kodf$home[i], kodf$away[i])
-    kodf$home_score[i] <- game_score[1]
-    kodf$away_score[i] <- game_score[2]
+    if (is.na(kodf$home_score[i])) {
+      game_score <- predict_game(kodf$home[i], kodf$away[i])
+      kodf$home_score[i] <- game_score[1]
+      kodf$away_score[i] <- game_score[2]
+      if (game_score[1] == game_score[2]) {
+        kodf$home_penalty[i] <- sample(2:5, 1)
+        kodf$away_penalty[i] <- sample(2:5, 1)
+        if (kodf$home_penalty[i] == kodf$away_penalty[i]) {
+          kodf$home_penalty[i] <- kodf$home_penalty[i] + 1
+        }
+      }
+    }
     kodf <- populate_winner_loser(kodf)
   }
   for (i in 9:12) {
@@ -182,9 +201,18 @@ predict_KOs <- function(schedule_df, group_stage_summary) {
     }
   }
   for (i in 9:12) {
-    game_score <- predict_game(kodf$home[i], kodf$away[i])
-    kodf$home_score[i] <- game_score[1]
-    kodf$away_score[i] <- game_score[2]
+    if (is.na(kodf$home_score[i])) {
+      game_score <- predict_game(kodf$home[i], kodf$away[i])
+      kodf$home_score[i] <- game_score[1]
+      kodf$away_score[i] <- game_score[2]
+      if (game_score[1] == game_score[2]) {
+        kodf$home_penalty[i] <- sample(2:5, 1)
+        kodf$away_penalty[i] <- sample(2:5, 1)
+        if (kodf$home_penalty[i] == kodf$away_penalty[i]) {
+          kodf$home_penalty[i] <- kodf$home_penalty[i] + 1
+        }
+      }
+    }
     kodf <- populate_winner_loser(kodf)
   }
   for (i in 13:14) {
@@ -198,9 +226,18 @@ predict_KOs <- function(schedule_df, group_stage_summary) {
     }
   }
   for (i in 13:14) {
-    game_score <- predict_game(kodf$home[i], kodf$away[i])
-    kodf$home_score[i] <- game_score[1]
-    kodf$away_score[i] <- game_score[2]
+    if (is.na(kodf$home_score[i])) {
+      game_score <- predict_game(kodf$home[i], kodf$away[i])
+      kodf$home_score[i] <- game_score[1]
+      kodf$away_score[i] <- game_score[2]
+      if (game_score[1] == game_score[2]) {
+        kodf$home_penalty[i] <- sample(2:5, 1)
+        kodf$away_penalty[i] <- sample(2:5, 1)
+        if (kodf$home_penalty[i] == kodf$away_penalty[i]) {
+          kodf$home_penalty[i] <- kodf$home_penalty[i] + 1
+        }
+      }
+    }
     kodf <- populate_winner_loser(kodf)
   }
   if (!(kodf$home[15] %in% team_list)) {
@@ -216,12 +253,123 @@ predict_KOs <- function(schedule_df, group_stage_summary) {
     kodf$away[16] <- kodf$winner[14]
   }
   for (i in 15:16) {
-    game_score <- predict_game(kodf$home[i], kodf$away[i])
-    kodf$home_score[i] <- game_score[1]
-    kodf$away_score[i] <- game_score[2]
+    if (is.na(kodf$home_score[i])) {
+      game_score <- predict_game(kodf$home[i], kodf$away[i])
+      kodf$home_score[i] <- game_score[1]
+      kodf$away_score[i] <- game_score[2]
+      if (game_score[1] == game_score[2]) {
+        kodf$home_penalty[i] <- sample(2:5, 1)
+        kodf$away_penalty[i] <- sample(2:5, 1)
+        if (kodf$home_penalty[i] == kodf$away_penalty[i]) {
+          kodf$home_penalty[i] <- kodf$home_penalty[i] + 1
+        }
+      }
+    }
     kodf <- populate_winner_loser(kodf)
   }
   
 
   return(kodf)
 }
+
+
+# 
+# create_time_course_predictions <- function(schedule_df, n_reps = 100) {
+#   matchday_vector <- unique(schedule_df$matchday)
+#   matchday_df <- data.frame(matchday_name = matchday_vector,
+#                             matchday_n = 1:7)
+#   schedule_df$matchday_n <- 0
+#   label_list <- c("start", "group_1", "group_2", "group_3",
+#                   "knockout_1", "quarters", "semis", "final")
+#   predicted_results_list <- list()
+#   mddf_list <- list()
+#   for (i in 1:nrow(schedule_df)){
+#     schedule_df$matchday_n[i] <- matchday_df$matchday_n[matchday_df$matchday_name == schedule_df$matchday[i]]
+#   }
+#   for (i in 0:7) {
+#     mddf <- schedule_df
+#     mddf$home_score[mddf$matchday_n > i] <- NA
+#     mddf$away_score[mddf$matchday_n > i] <- NA
+#     mddf$winner[mddf$matchday_n > i] <- NA
+#     mddf$loser[mddf$matchday_n > i] <- NA
+#     mddf$draw[mddf$matchday_n > i] <- NA
+#     mddf$home_penalty[mddf$matchday_n > i] <- NA
+#     mddf$away_penalty[mddf$matchday_n > i] <- NA
+# 
+#     mddf_list[[i+1]] <- mddf
+# 
+#     if (i > 0 && isTRUE(all.equal(mddf_list[[i]], mddf))) {
+#       predicted_results_list[[i+1]] <- predicted_results_list[[i]]
+#       print(paste0("round ", i+1, " of 8"))
+#       print("using previous")
+#     } else {
+#       print(paste0("round ", i+1, " of 8"))
+#       md_predictions <- predict_n_tournaments(mddf, n_reps)
+#       md_predictions$label <- i
+#       predicted_results_list[[i+1]] <- md_predictions
+#     }
+#   }
+#   predicted_results_df <- bind_rows(predicted_results_list)
+#   #predicted_results_df$label <- factor(predicted_results_df$label, levels = label_list)
+#   print("done")
+#   return(predicted_results_df)
+# }
+# 
+
+
+
+create_time_course_predictions <- function(schedule_df, n_reps = 100) {
+  matchday_vector <- unique(schedule_df$matchday)
+  matchday_df <- data.frame(matchday_name = matchday_vector,
+                            matchday_n = 1:7)
+  schedule_df$matchday_n <- 0
+  label_list <- c("start", "group_1", "group_2", "group_3",
+                  "knockout_1", "quarters", "semis", "final")
+  predicted_results_list <- list()
+  mddf_list <- list()
+  for (i in 1:nrow(schedule_df)){
+    schedule_df$matchday_n[i] <- matchday_df$matchday_n[matchday_df$matchday_name == schedule_df$matchday[i]]
+  }
+  for (i in 0:7) {
+    mddf <- schedule_df
+    mddf$home_score[mddf$matchday_n > i] <- NA
+    mddf$away_score[mddf$matchday_n > i] <- NA
+    mddf$winner[mddf$matchday_n > i] <- NA
+    mddf$loser[mddf$matchday_n > i] <- NA
+    mddf$draw[mddf$matchday_n > i] <- NA
+    mddf$home_penalty[mddf$matchday_n > i] <- NA
+    mddf$away_penalty[mddf$matchday_n > i] <- NA
+    
+    mddf_list[[i+1]] <- mddf
+    
+    if (i > 0 && isTRUE(all.equal(mddf_list[[i]], mddf))) {
+      predicted_results_list[[i+1]] <- predicted_results_list[[i]]
+      print(paste0("round ", i+1, " of 8"))
+      print("using previous")
+    } else {
+      print(paste0("round ", i+1, " of 8"))
+      round_10_list <- list()
+      for (j in 1:10){
+        print(paste0(j*10, "% complete"))
+        md_predictions <- predict_n_tournaments(mddf, (n_reps%/%10))
+        round_10_list[[j]] <- md_predictions
+        
+        round_10_long <- bind_rows(round_10_list)
+        md_predictions <- round_10_long %>%
+          group_by(country) %>%
+          summarise_all(list("avg" = mean, "sd" = sd))
+        
+      }
+      md_predictions$matchday <- i
+      predicted_results_list[[i+1]] <- md_predictions
+    }
+  }
+  predicted_results_df <- bind_rows(predicted_results_list)
+  predicted_results_df$group <- ""
+  for (i in 1:nrow(predicted_results_df)) {
+    predicted_results_df$group[i] <- elo_rankings$group[elo_rankings$Country == predicted_results_df$country[i]]
+  }
+  print("done")
+  return(predicted_results_df)
+}
+

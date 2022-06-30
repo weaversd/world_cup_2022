@@ -14,11 +14,6 @@ populate_winner_loser <- function(schedule_df){
         schedule_df$loser[i] <- schedule_df$home[i]
         schedule_df$draw[i] <- F
       } else {
-        schedule_df$home_penalty[i] <- sample(2:5, 1)
-        schedule_df$away_penalty[i] <- sample(2:5, 1)
-        if (schedule_df$home_penalty[i] == schedule_df$away_penalty[i]) {
-          schedule_df$home_penalty[i] <- schedule_df$home_penalty[i] + 1
-        }
         if (schedule_df$home_penalty[i] > schedule_df$away_penalty[i]) {
           schedule_df$winner[i] <- schedule_df$home[i]
           schedule_df$loser[i] <- schedule_df$away[i]
