@@ -1,6 +1,13 @@
+
+elo_rankings <- read.table("www/WF_elo_ratings.csv", sep = ",", header = T)
+team_list <- elo_rankings$Country
+goal_probabilities <- read.csv("www/goal_number_probabilities.csv", sep = ",",
+                               header = T)
+
+
 #historical draw probability if 0.235 -> d = 83.202
 
- predict_game <- function(hometeam, awayteam){
+ predict_game <- function(hometeam, awayteam, elo_rankings){
   home_elo <- elo_rankings$Elo[elo_rankings$Country == hometeam]
   away_elo <- elo_rankings$Elo[elo_rankings$Country == awayteam]
   difference_elo <- (home_elo - away_elo)
@@ -59,10 +66,10 @@ predict_goals <- function(draw = F, home_winner = T) {
 }
 
 
-predict_group_stage_results <- function(schedule_df){
+predict_group_stage_results <- function(schedule_df, elo_rankings){
   for (i in 1:nrow(schedule_df)) {
     if (is.na(schedule_df$home_score[i]) && schedule_df$knockout[i] == F) {
-      predicted_score <- predict_game(schedule_df$home[i], schedule_df$away[i])
+      predicted_score <- predict_game(schedule_df$home[i], schedule_df$away[i], elo_rankings)
       schedule_df$home_score[i] <- predicted_score[1]
       schedule_df$away_score[i] <- predicted_score[2]
     }
@@ -71,7 +78,7 @@ predict_group_stage_results <- function(schedule_df){
   return(schedule_df)
 }
 
-predict_n_tournaments <- function(schedule_df, n_reps){
+predict_n_tournaments <- function(schedule_df, n_reps, elo_rankings){
   
   group_stage_results_counter <- data.frame(country = team_list,
                                            group_wins = 0,
@@ -98,9 +105,9 @@ predict_n_tournaments <- function(schedule_df, n_reps){
     # if ((percent_done %% 10 == 0) && (previous_percent_done %% 10 !=0 )) {
     #   print(paste0(percent_done, "% complete"))
     # }
-    group_stage_results <- predict_group_stage_results(schedule_df)
+    group_stage_results <- predict_group_stage_results(schedule_df, elo_rankings)
     group_stage_final_summary <- summarize_group_results(group_stage_results)
-    ko_results <- predict_KOs(schedule_df, group_stage_final_summary)
+    ko_results <- predict_KOs(schedule_df, group_stage_final_summary, elo_rankings)
     
     quarters_teams <- ko_results[ko_results$group == "eighth",]$winner
     for (j in 1:length(quarters_teams)) {
@@ -158,12 +165,8 @@ predict_n_tournaments <- function(schedule_df, n_reps){
   return(group_stage_results_counter)
 }
 
-elo_rankings <- read.table("www/WF_elo_ratings.csv", sep = ",", header = T)
-team_list <- elo_rankings$Country
-goal_probabilities <- read.csv("www/goal_number_probabilities.csv", sep = ",",
-                                 header = T)
 
-predict_KOs <- function(schedule_df, group_stage_summary) {
+predict_KOs <- function(schedule_df, group_stage_summary, elo_rankings) {
   kodf <- schedule_df[schedule_df$knockout == T,]
   for (i in 1:8) {
     if (!(kodf$home[i] %in% team_list)) {
@@ -177,7 +180,7 @@ predict_KOs <- function(schedule_df, group_stage_summary) {
   }
   for (i in 1:8) {
     if (is.na(kodf$home_score[i])) {
-      game_score <- predict_game(kodf$home[i], kodf$away[i])
+      game_score <- predict_game(kodf$home[i], kodf$away[i], elo_rankings)
       kodf$home_score[i] <- game_score[1]
       kodf$away_score[i] <- game_score[2]
       if (game_score[1] == game_score[2]) {
@@ -202,7 +205,7 @@ predict_KOs <- function(schedule_df, group_stage_summary) {
   }
   for (i in 9:12) {
     if (is.na(kodf$home_score[i])) {
-      game_score <- predict_game(kodf$home[i], kodf$away[i])
+      game_score <- predict_game(kodf$home[i], kodf$away[i], elo_rankings)
       kodf$home_score[i] <- game_score[1]
       kodf$away_score[i] <- game_score[2]
       if (game_score[1] == game_score[2]) {
@@ -227,7 +230,7 @@ predict_KOs <- function(schedule_df, group_stage_summary) {
   }
   for (i in 13:14) {
     if (is.na(kodf$home_score[i])) {
-      game_score <- predict_game(kodf$home[i], kodf$away[i])
+      game_score <- predict_game(kodf$home[i], kodf$away[i], elo_rankings)
       kodf$home_score[i] <- game_score[1]
       kodf$away_score[i] <- game_score[2]
       if (game_score[1] == game_score[2]) {
@@ -254,7 +257,7 @@ predict_KOs <- function(schedule_df, group_stage_summary) {
   }
   for (i in 15:16) {
     if (is.na(kodf$home_score[i])) {
-      game_score <- predict_game(kodf$home[i], kodf$away[i])
+      game_score <- predict_game(kodf$home[i], kodf$away[i], elo_rankings)
       kodf$home_score[i] <- game_score[1]
       kodf$away_score[i] <- game_score[2]
       if (game_score[1] == game_score[2]) {
@@ -318,7 +321,7 @@ predict_KOs <- function(schedule_df, group_stage_summary) {
 
 
 
-create_time_course_predictions <- function(schedule_df, n_reps = 100) {
+create_time_course_predictions <- function(schedule_df, n_reps = 100, elo_rankings) {
   matchday_vector <- unique(schedule_df$matchday)
   matchday_df <- data.frame(matchday_name = matchday_vector,
                             matchday_n = 1:7)
@@ -351,7 +354,7 @@ create_time_course_predictions <- function(schedule_df, n_reps = 100) {
       round_10_list <- list()
       for (j in 1:10){
         print(paste0(j*10, "% complete"))
-        md_predictions <- predict_n_tournaments(mddf, (n_reps%/%10))
+        md_predictions <- predict_n_tournaments(mddf, (n_reps%/%10), elo_rankings)
         round_10_list[[j]] <- md_predictions
         
         round_10_long <- bind_rows(round_10_list)

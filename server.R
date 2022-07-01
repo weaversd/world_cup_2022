@@ -24,6 +24,17 @@ server <- function(input, output, session) {
     }
   )
   
+  elo_default <- reactive(read.table("www/WF_elo_ratings.csv", sep = ",", header = T))
+  
+  output$download_elo <-  downloadHandler(
+    filename = function() {
+      paste0("defaultelo.csv")
+    },
+    content = function(file) {
+      write.csv(elo_default(), file, row.names = F)
+    }
+  )
+  
   display_schedule <- reactive({
     if (input$team_pattern != "" && input$group_pattern != "") {
       schedule_import()[(grepl(input$team_pattern, schedule_import()$home, ignore.case = T) | grepl(input$team_pattern, schedule_import()$away, ignore.case = T)) & grepl(toupper(input$group_pattern), schedule_import()$group, ignore.case = F) ,]
@@ -37,8 +48,15 @@ server <- function(input, output, session) {
   })
   
   elo_import <- reactive({
-    elo_rankings
+    if (!is.null(input$elo_csv)) {
+      import <- read.table(input$elo_csv$datapath, sep = ",", header = T)
+    } else {
+      import <- elo_rankings
+    }
+    return(import)
   })
+  
+  #output$elo <- renderTable(elo_import())
                               
   teams <- reactive({
     team_list <- unique(c(schedule_import()$home, schedule_import()$away))
@@ -47,7 +65,7 @@ server <- function(input, output, session) {
   
   
   group_simulation_results <- eventReactive(input$simulate_group, {
-    predict_n_tournaments(schedule_import(), input$predict_group_n)})
+    predict_n_tournaments(schedule_import(), input$predict_group_n, elo_import())})
   
   table_list <- reactive({
     if (input$simulate_group) {
@@ -74,15 +92,28 @@ server <- function(input, output, session) {
   })
   
   prediction_df <- eventReactive(input$simulate_overall, {
-    create_time_course_predictions(schedule_import(), input$predict_overall_n)})
+    create_time_course_predictions(schedule_import(), input$predict_overall_n, elo_import())})
   
   
-  output$advance_KOs_plotly <- renderPlotly(create_plotly_KO_chance(prediction_df(), input$predict_overall_n))
-  output$champions_plotly <- renderPlotly(create_plotly_champions_chance(prediction_df(), input$predict_overall_n))
-  output$finals_plotly <- renderPlotly(create_plotly_finals_chance(prediction_df(), input$predict_overall_n))
-  output$semis_plotly <- renderPlotly(create_plotly_semis_chance(prediction_df(), input$predict_overall_n))
-  output$quarters_plotly <- renderPlotly(create_plotly_quarters_chance(prediction_df(), input$predict_overall_n))
-  output$win_group_plotly <- renderPlotly(create_plotly_group_win_chance(prediction_df(), input$predict_overall_n))
+  display_prediction <- reactive({
+    if (input$team_pattern_sim != "" && input$group_pattern_sim != "") {
+      prediction_df()[(grepl(input$team_pattern_sim, prediction_df()$country, ignore.case = T)) & grepl(toupper(input$group_pattern_sim), prediction_df()$group, ignore.case = F) ,]
+    } else if (input$team_pattern_sim != "") {
+      prediction_df()[(grepl(input$team_pattern_sim, prediction_df()$country, ignore.case = T)),]
+    } else if (input$group_pattern_sim != "") {
+      prediction_df()[grepl(toupper(input$group_pattern_sim), prediction_df()$group, ignore.case = F) ,]
+    } else {
+      prediction_df()
+    }
+  })
+  
+  
+  output$advance_KOs_plotly <- renderPlotly(create_plotly_KO_chance(display_prediction(), input$predict_overall_n))
+  output$champions_plotly <- renderPlotly(create_plotly_champions_chance(display_prediction(), input$predict_overall_n))
+  output$finals_plotly <- renderPlotly(create_plotly_finals_chance(display_prediction(), input$predict_overall_n))
+  output$semis_plotly <- renderPlotly(create_plotly_semis_chance(display_prediction(), input$predict_overall_n))
+  output$quarters_plotly <- renderPlotly(create_plotly_quarters_chance(display_prediction(), input$predict_overall_n))
+  output$win_group_plotly <- renderPlotly(create_plotly_group_win_chance(display_prediction(), input$predict_overall_n))
   
   
   #knockout games

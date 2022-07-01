@@ -2,13 +2,21 @@ library(shiny)
 
 ui <- navbarPage(title = "World Cup 2022",
                  tabPanel("Schedule",
-                          fluidRow(column(3, textInput("group_pattern",
-                                    "Group Search")),
-                          column(3, textInput("team_pattern",
-                                    "Team Search")),
-                          column(3, fileInput("scores_csv", "Upload Scores .csv file",
-                                              accept = ".csv")),
-                          column(2, downloadButton("download_scores", "Download Score Template"))),
+                          fluidRow(column(3, wellPanel(
+                            textInput("group_pattern", "Group Search"),
+                            textInput("team_pattern", "Team Search"))),
+                            column(4, wellPanel(
+                              fileInput("scores_csv", "Upload Scores .csv file",
+                                        accept = ".csv"),
+                              downloadButton("download_scores", "Download Score Template")
+                            )),
+                            column(4,(wellPanel(
+                              fileInput("elo_csv", "Upload Elo .csv file",
+                                        accept = ".csv"),
+                              downloadButton("download_elo", "Download Default Elo")
+                            )))
+                          ),
+                          tableOutput("elo"),
                           tableOutput("schedule")),
                  tabPanel("Groups",
                           fluidRow(column(5,  numericInput("predict_group_n",
@@ -66,13 +74,19 @@ ui <- navbarPage(title = "World Cup 2022",
                                                             "Simulate"))),
                             fluidRow(tabsetPanel(
                               tabPanel("Predictions by Simulation",
+                                       fluidRow(column(3, offset = 1, textInput("group_pattern_sim",
+                                                           "Group Search")),
+                                       column(3, textInput("team_pattern_sim",
+                                                           "Team Search"))),
                                        tags$hr(),
-                                       withSpinner(plotlyOutput("champions_plotly", height = 600)), tags$hr(),
-                                       withSpinner(plotlyOutput("advance_KOs_plotly", height = 600)), tags$hr(),
-                                       withSpinner(plotlyOutput("win_group_plotly", height = 600)), tags$hr(),
-                                       withSpinner(plotlyOutput("quarters_plotly", height = 600)), tags$hr(),
-                                       withSpinner(plotlyOutput("semis_plotly", height = 600)), tags$hr(),
-                                       withSpinner(plotlyOutput("finals_plotly", height = 600)), tags$hr()),
+                                       tabsetPanel(
+                                         tabPanel(offset = 1,"Win World Cup", withSpinner(plotlyOutput("champions_plotly", height = 600)), tags$hr()),
+                                         tabPanel("Advance KOs", withSpinner(plotlyOutput("advance_KOs_plotly", height = 600)), tags$hr()),
+                                         tabPanel("Win Group", withSpinner(plotlyOutput("win_group_plotly", height = 600)), tags$hr()),
+                                         tabPanel("Advance Quarters", withSpinner(plotlyOutput("quarters_plotly", height = 600)), tags$hr()),
+                                         tabPanel("Advance Semis", withSpinner(plotlyOutput("semis_plotly", height = 600)), tags$hr()),
+                                         tabPanel("Advance Finals", withSpinner(plotlyOutput("finals_plotly", height = 600)), tags$hr()))
+                                       ),
                               tabPanel("Stats", "coming soon")
                             )
                           )),

@@ -21,11 +21,12 @@ label_list <- c("start", "group game 1", "group game 2", "group game 3",
 # test
 
 
-label_list <- c("start", "group_1", "group_2", "group_3",
-                "knockout_1", "quarters", "semis", "final")
+# label_list <- c("start", "group_1", "group_2", "group_3",
+#                 "knockout_1", "quarters", "semis", "final")
 
 create_plotly_KO_chance <- function(prediction_df, n_reps) {
-  
+  team_list <- unique(prediction_df$country)
+  color_list <- colors[team_list,]
   
   plot <- ggplot(data = prediction_df) +
     geom_point(aes(x = matchday, y = advance_perc_avg, color = country, plus_minus = advance_perc_sd)) +
@@ -48,7 +49,8 @@ create_plotly_KO_chance <- function(prediction_df, n_reps) {
 }
 
 create_plotly_group_win_chance <- function(prediction_df, n_reps) {
-  
+  team_list <- unique(prediction_df$country)
+  color_list <- colors[team_list,]
   
   plot <- ggplot(data = prediction_df) +
     geom_point(aes(x = matchday, y = group_win_perc_avg, color = country, plus_minus = group_win_perc_sd)) +
@@ -71,7 +73,8 @@ create_plotly_group_win_chance <- function(prediction_df, n_reps) {
 }
 
 create_plotly_quarters_chance <- function(prediction_df, n_reps) {
-  
+  team_list <- unique(prediction_df$country)
+  color_list <- colors[team_list,]
   
   plot <- ggplot(data = prediction_df) +
     geom_point(aes(x = matchday, y = quarters_perc_avg, color = country, plus_minus = quarters_perc_sd)) +
@@ -94,7 +97,8 @@ create_plotly_quarters_chance <- function(prediction_df, n_reps) {
 }
 
 create_plotly_semis_chance <- function(prediction_df, n_reps) {
-  
+  team_list <- unique(prediction_df$country)
+  color_list <- colors[team_list,]
   
   plot <- ggplot(data = prediction_df) +
     geom_point(aes(x = matchday, y = semis_perc_avg, color = country, plus_minus = semis_perc_sd)) +
@@ -117,7 +121,8 @@ create_plotly_semis_chance <- function(prediction_df, n_reps) {
 }
 
 create_plotly_finals_chance <- function(prediction_df, n_reps) {
-  
+  team_list <- unique(prediction_df$country)
+  color_list <- colors[team_list,]
   
   plot <- ggplot(data = prediction_df) +
     geom_point(aes(x = matchday, y = finals_perc_avg, color = country, plus_minus = finals_perc_sd)) +
@@ -140,7 +145,8 @@ create_plotly_finals_chance <- function(prediction_df, n_reps) {
 }
 
 create_plotly_champions_chance <- function(prediction_df, n_reps) {
-  
+  team_list <- unique(prediction_df$country)
+  color_list <- colors[team_list,]
   
   plot <- ggplot(data = prediction_df) +
     geom_point(aes(x = matchday, y = champions_perc_avg, color = country, plus_minus = champions_perc_sd)) +
