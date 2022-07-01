@@ -74,22 +74,34 @@ ui <- navbarPage(title = "World Cup 2022",
                                                             "Simulate"))),
                             fluidRow(tabsetPanel(
                               tabPanel("Predictions by Simulation",
-                                       fluidRow(column(3, offset = 1, textInput("group_pattern_sim",
+                                       fluidRow(tags$head(
+                                         tags$style(
+                                           HTML(".shiny-notification {
+                                                  height: 100px;
+                                                  width: 400px;
+                                                  position:fixed;
+                                                  font-size: 20px;
+                                                  top: calc(13% - 50px);;
+                                                  left: calc(90% - 300px);;
+                                                  }
+                                                "
+                                           )
+                                         )
+                                       ),
+                                       column(3, offset = 1, textInput("group_pattern_sim",
                                                            "Group Search")),
                                        column(3, textInput("team_pattern_sim",
                                                            "Team Search"))),
                                        tags$hr(),
                                        tabsetPanel(
-                                         tabPanel(offset = 1,"Win World Cup", withSpinner(plotlyOutput("champions_plotly", height = 600)), tags$hr()),
+                                         tabPanel("Win World Cup", withSpinner(plotlyOutput("champions_plotly", height = 600)), tags$hr()),
                                          tabPanel("Advance KOs", withSpinner(plotlyOutput("advance_KOs_plotly", height = 600)), tags$hr()),
                                          tabPanel("Win Group", withSpinner(plotlyOutput("win_group_plotly", height = 600)), tags$hr()),
                                          tabPanel("Advance Quarters", withSpinner(plotlyOutput("quarters_plotly", height = 600)), tags$hr()),
                                          tabPanel("Advance Semis", withSpinner(plotlyOutput("semis_plotly", height = 600)), tags$hr()),
-                                         tabPanel("Advance Finals", withSpinner(plotlyOutput("finals_plotly", height = 600)), tags$hr()))
-                                       ),
+                                         tabPanel("Advance Finals", withSpinner(plotlyOutput("finals_plotly", height = 600)), tags$hr()))),
                               tabPanel("Stats", "coming soon")
-                            )
-                          )),
+                            ))),
                  tabPanel("How this works",
                           includeMarkdown("Documentation.md"))
 )

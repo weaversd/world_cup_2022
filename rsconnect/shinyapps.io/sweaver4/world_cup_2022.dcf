@@ -5,9 +5,9 @@ account: sweaver4
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 6574674
-bundleId: 6059186
+bundleId: 6062107
 url: https://sweaver4.shinyapps.io/world_cup_2022/
-when: 1656624209.94168
-lastSyncTime: 1656624209.94168
+when: 1656701830.35597
+lastSyncTime: 1656701830.35597
 asMultiple: FALSE
 asStatic: FALSE

@@ -6,6 +6,7 @@ library(dplyr)
 library(shinycssloaders)
 library(markdown)
 library(plotly)
+library(knitr)
 
 #functions
 source("www/functions.R")

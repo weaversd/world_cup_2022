@@ -3,6 +3,7 @@ source("global.R")
 
 server <- function(input, output, session) {
   
+  
   schedule_import <- reactive({
     if (!is.null(input$scores_csv)) {
       import <- read.table(input$scores_csv$datapath, sep = ",", header = T)
@@ -92,7 +93,23 @@ server <- function(input, output, session) {
   })
   
   prediction_df <- eventReactive(input$simulate_overall, {
-    create_time_course_predictions(schedule_import(), input$predict_overall_n, elo_import())})
+    progress <- shiny::Progress$new(style = "notification")
+    progress$set(message = "Simulating", value = 0)
+    on.exit(progress$close())
+    
+    updateProgress <- function(value = NULL, detail = NULL) {
+      if (is.null(value)) {
+        value <- progress$getValue()
+        value <- value + (progress$getMax() - value) / 10
+      }
+      progress$set(value = value, detail = detail)
+    }
+    
+    
+    
+    create_time_course_predictions(schedule_import(),
+                                   input$predict_overall_n, elo_import(),
+                                   updateProgress)})
   
   
   display_prediction <- reactive({

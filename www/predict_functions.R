@@ -321,13 +321,15 @@ predict_KOs <- function(schedule_df, group_stage_summary, elo_rankings) {
 
 
 
-create_time_course_predictions <- function(schedule_df, n_reps = 100, elo_rankings) {
+create_time_course_predictions <- function(schedule_df, n_reps = 100, elo_rankings, updateProgress = NULL) {
   matchday_vector <- unique(schedule_df$matchday)
   matchday_df <- data.frame(matchday_name = matchday_vector,
                             matchday_n = 1:7)
   schedule_df$matchday_n <- 0
   label_list <- c("start", "group_1", "group_2", "group_3",
                   "knockout_1", "quarters", "semis", "final")
+  label_list2 <- c("tournament start", "group game 1", "group game 2", "group game 3",
+                  "knockout round 1", "quarters", "semis", "final")
   predicted_results_list <- list()
   mddf_list <- list()
   for (i in 1:nrow(schedule_df)){
@@ -342,27 +344,55 @@ create_time_course_predictions <- function(schedule_df, n_reps = 100, elo_rankin
     mddf$draw[mddf$matchday_n > i] <- NA
     mddf$home_penalty[mddf$matchday_n > i] <- NA
     mddf$away_penalty[mddf$matchday_n > i] <- NA
-    
+    if (i < 4) {
+      mddf$home[mddf$knockout == T] <- c("1A", "1C", "1B", "1D", "1E", "1G",
+                                         "1F", "1H", "W49", "W53", "W51", "W55",
+                                         "W57", "W59", "L61", "W61")
+      mddf$away[mddf$knockout == T] <- c("2B", "2D", "2A", "2C", "2F", "2H",
+                                         "2E","2G","W50","W54","W52","W56",
+                                         "W58","W60","L62","W62")
+    } else if (i == 5) {
+      mddf$home[mddf$matchday_n > 4] <- c("W49", "W53", "W51", "W55",
+                                          "W57", "W59", "L61", "W61")
+      mddf$away[mddf$matchday_n > 4] <- c("W50","W54","W52","W56",
+                                          "W58","W60","L62","W62")
+    } else if (i == 6) {
+      mddf$home[mddf$matchday_n > 5] <- c("W57", "W59", "L61", "W61")
+      mddf$away[mddf$matchday_n > 5] <- c("W58","W60","L62","W62")
+    } else if (i == 7) {
+      mddf$home[mddf$matchday_n > 6] <- c("L61", "W61")
+      mddf$away[mddf$matchday_n > 6] <- c("L62","W62")
+    }
+    #print(mddf$home)
+    #print(mddf$home_score)
     mddf_list[[i+1]] <- mddf
     
     if (i > 0 && isTRUE(all.equal(mddf_list[[i]], mddf))) {
       predicted_results_list[[i+1]] <- predicted_results_list[[i]]
-      print(paste0("round ", i+1, " of 8"))
+      print(paste0("from ", label_list2[i+1]))
       print("using previous")
+      if (is.function(updateProgress)) {
+        text <- paste0(" from ", label_list2[i+1], " -- using Previous")
+        value <- 1
+        updateProgress(detail = text, value = value)
+      }
     } else {
-      print(paste0("round ", i+1, " of 8"))
+      print(paste0("Simulating from ", label_list2[i+1]))
       round_10_list <- list()
       for (j in 1:10){
-        print(paste0(j*10, "% complete"))
         md_predictions <- predict_n_tournaments(mddf, (n_reps%/%10), elo_rankings)
         round_10_list[[j]] <- md_predictions
-        
-        round_10_long <- bind_rows(round_10_list)
-        md_predictions <- round_10_long %>%
-          group_by(country) %>%
-          summarise_all(list("avg" = mean, "sd" = sd))
-        
+        if (is.function(updateProgress)) {
+          text <- paste0(" from ", label_list2[i+1])
+          value <- j/10
+          updateProgress(detail = text, value = value)
+        }
+        print(paste0(j*10, "% complete"))
       }
+      round_10_long <- bind_rows(round_10_list)
+      md_predictions <- round_10_long %>%
+        group_by(country) %>%
+        summarise_all(list("avg" = mean, "sd" = sd))
       md_predictions$matchday <- i
       predicted_results_list[[i+1]] <- md_predictions
     }
