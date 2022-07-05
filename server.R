@@ -11,8 +11,102 @@ server <- function(input, output, session) {
       import <- read.table("scores.csv", sep = ",", header = T)
     }
     import <- populate_winner_loser(import)
+    import$date <- as.Date(import$date, "%m/%d/%Y")
     return(import)
     })
+  
+  todays_date <- reactive(Sys.Date())
+  #todays_date <- reactive(as.Date("2022-12-19"))
+  output$today <- renderText(paste0("Today's Date: ", as.character(todays_date())))
+  todays_games_list <- reactive({
+    todays_games <- schedule_import()[schedule_import()$date == todays_date(),]
+    if (nrow(todays_games) == 0) {
+      return(NULL)
+    }
+    todays_games$date <- as.character(todays_games$date)
+    create_game_display_df_list(todays_games)})
+  
+  next_game_date <- reactive(min(schedule_import()$date[which( schedule_import()$date > todays_date())]))
+  output$next_game_day <- renderText({
+    if (todays_date() >= as.Date("2022-12-18")) {
+      "No Future Games"
+    } else {
+      paste0("Next Game Date: ",as.character(next_game_date()))
+    }
+  })
+
+
+  output$todays_games_dfs <- renderUI({
+    if(length(todays_games_list()) > 0) {
+      lapply(1:length(todays_games_list()), function(i){
+        output[[paste0("todays_game",i)]] <- renderTable(todays_games_list()[[i]])
+        tableOutput(paste0("todays_game", i))
+      })
+    } else {
+      return(NULL)
+    }
+  })
+  
+  future_games_list <- reactive({
+    future_games <- schedule_import()[schedule_import()$date == next_game_date(),]
+    if (nrow(future_games) == 0) {
+      return(NULL)
+    }
+    future_games$date <- as.character(future_games$date)
+    create_game_display_df_list(future_games)
+  })
+  
+  output$future_games_df <- renderUI({
+    if(length(future_games_list()) > 0) {
+      lapply(1:length(future_games_list()), function(i){
+        output[[paste0("future_game",i)]] <- renderTable(future_games_list()[[i]])
+        tableOutput(paste0("future_game", i))
+      })
+    } else {
+      return(NULL)
+    }
+  })
+  
+  search_games_list <- reactive({
+    search_games <- schedule_import()[schedule_import()$date == input$date_search,]
+    if (nrow(search_games) == 0) {
+      return(NULL)
+    }
+    search_games$date <- as.character(search_games$date)
+    create_game_display_df_list(search_games)
+  })
+  
+  output$seach_games_df <- renderUI({
+    if(length(search_games_list()) > 0) {
+      lapply(1:length(search_games_list()), function(i){
+        output[[paste0("search_game",i)]] <- renderTable(search_games_list()[[i]])
+        tableOutput(paste0("search_game", i))
+      })
+    } else {
+      return(NULL)
+    }
+  })
+  
+  output$no_games_today <- renderText({
+    if(is.null(todays_games_list())) {
+      return <- "No games scheduled"
+    } else {
+      return <- NULL
+    }
+    return(return)
+  })
+  
+  output$no_games_today_search <- renderText({
+    if(is.null(search_games_list())) {
+      return <- "No games scheduled on that date"
+    } else {
+      return <- NULL
+    }
+    return(return)
+  })
+  
+  
+
   
   scores_template <- reactive(read.table("empty_scores.csv", sep = ",", header = T))
   
@@ -37,15 +131,18 @@ server <- function(input, output, session) {
   )
   
   display_schedule <- reactive({
+    temp <- schedule_import()
+    temp$date <- as.character(temp$date)
     if (input$team_pattern != "" && input$group_pattern != "") {
-      schedule_import()[(grepl(input$team_pattern, schedule_import()$home, ignore.case = T) | grepl(input$team_pattern, schedule_import()$away, ignore.case = T)) & grepl(toupper(input$group_pattern), schedule_import()$group, ignore.case = F) ,]
+      temp <- temp[(grepl(input$team_pattern, temp$home, ignore.case = T) | grepl(input$team_pattern, temp$away, ignore.case = T)) & grepl(toupper(input$group_pattern), temp$group, ignore.case = F) ,]
     } else if (input$team_pattern != "") {
-      schedule_import()[(grepl(input$team_pattern, schedule_import()$home, ignore.case = T) | grepl(input$team_pattern, schedule_import()$away, ignore.case = T)),]
+      temp <- temp[(grepl(input$team_pattern, temp$home, ignore.case = T) | grepl(input$team_pattern, temp$away, ignore.case = T)),]
     } else if (input$group_pattern != "") {
-      schedule_import()[grepl(toupper(input$group_pattern), schedule_import()$group, ignore.case = F) ,]
+      temp <- temp[grepl(toupper(input$group_pattern), temp$group, ignore.case = F) ,]
     } else {
-      schedule_import()
+      temp
     }
+    return(temp)
   })
   
   elo_import <- reactive({
@@ -125,17 +222,22 @@ server <- function(input, output, session) {
   })
   
   
-  output$advance_KOs_plotly <- renderPlotly(create_plotly_KO_chance(display_prediction(), input$predict_overall_n))
-  output$champions_plotly <- renderPlotly(create_plotly_champions_chance(display_prediction(), input$predict_overall_n))
-  output$finals_plotly <- renderPlotly(create_plotly_finals_chance(display_prediction(), input$predict_overall_n))
-  output$semis_plotly <- renderPlotly(create_plotly_semis_chance(display_prediction(), input$predict_overall_n))
-  output$quarters_plotly <- renderPlotly(create_plotly_quarters_chance(display_prediction(), input$predict_overall_n))
-  output$win_group_plotly <- renderPlotly(create_plotly_group_win_chance(display_prediction(), input$predict_overall_n))
+  output$advance_KOs_plotly <- renderPlotly(create_plotly_KO_chance(display_prediction(), input$predict_overall_n, input$error_type))
+  output$champions_plotly <- renderPlotly(create_plotly_champions_chance(display_prediction(), input$predict_overall_n, input$error_type))
+  output$finals_plotly <- renderPlotly(create_plotly_finals_chance(display_prediction(), input$predict_overall_n, input$error_type))
+  output$semis_plotly <- renderPlotly(create_plotly_semis_chance(display_prediction(), input$predict_overall_n, input$error_type))
+  output$quarters_plotly <- renderPlotly(create_plotly_quarters_chance(display_prediction(), input$predict_overall_n, input$error_type))
+  output$win_group_plotly <- renderPlotly(create_plotly_group_win_chance(display_prediction(), input$predict_overall_n, input$error_type))
   
   
   #knockout games
+  knockout_display <- reactive({
+    temp <- schedule_import()
+    temp$date <- as.character(temp$date)
+    return(temp)})
+  
   game49_df <- reactive({
-    row <- schedule_import()[schedule_import()$game_n == 49,]
+    row <- knockout_display()[knockout_display()$game_n == 49,]
     teams <- c(row$home[1], row$away[1])
     scores <- c(row$home_score[1], row$away_score[1])
     penalties <- c(row$home_penalty[1], row$away_penalty[1])
@@ -153,7 +255,7 @@ server <- function(input, output, session) {
 
   
   game57_df <- reactive({
-    row <- schedule_import()[schedule_import()$game_n == 57,]
+    row <- knockout_display()[knockout_display()$game_n == 57,]
     teams <- c(row$home[1], row$away[1])
     scores <- c(row$home_score[1], row$away_score[1])
     penalties <- c(row$home_penalty[1], row$away_penalty[1])
@@ -170,7 +272,7 @@ server <- function(input, output, session) {
   output$game_57 <- renderTable(game57_df())
   
   game50_df <- reactive({
-    row <- schedule_import()[schedule_import()$game_n == 50,]
+    row <- knockout_display()[knockout_display()$game_n == 50,]
     teams <- c(row$home[1], row$away[1])
     scores <- c(row$home_score[1], row$away_score[1])
     penalties <- c(row$home_penalty[1], row$away_penalty[1])
@@ -187,7 +289,7 @@ server <- function(input, output, session) {
   output$game_50 <- renderTable(game50_df())
   
   game53_df <- reactive({
-    row <- schedule_import()[schedule_import()$game_n == 53,]
+    row <- knockout_display()[knockout_display()$game_n == 53,]
     teams <- c(row$home[1], row$away[1])
     scores <- c(row$home_score[1], row$away_score[1])
     penalties <- c(row$home_penalty[1], row$away_penalty[1])
@@ -204,7 +306,7 @@ server <- function(input, output, session) {
   output$game_53 <- renderTable(game53_df())
   
   game58_df <- reactive({
-    row <- schedule_import()[schedule_import()$game_n == 58,]
+    row <- knockout_display()[knockout_display()$game_n == 58,]
     teams <- c(row$home[1], row$away[1])
     scores <- c(row$home_score[1], row$away_score[1])
     penalties <- c(row$home_penalty[1], row$away_penalty[1])
@@ -221,7 +323,7 @@ server <- function(input, output, session) {
   output$game_58 <- renderTable(game58_df())
   
   game54_df <- reactive({
-    row <- schedule_import()[schedule_import()$game_n == 54,]
+    row <- knockout_display()[knockout_display()$game_n == 54,]
     teams <- c(row$home[1], row$away[1])
     scores <- c(row$home_score[1], row$away_score[1])
     penalties <- c(row$home_penalty[1], row$away_penalty[1])
@@ -238,7 +340,7 @@ server <- function(input, output, session) {
   output$game_54 <- renderTable(game54_df())
   
   game51_df <- reactive({
-    row <- schedule_import()[schedule_import()$game_n == 51,]
+    row <- knockout_display()[knockout_display()$game_n == 51,]
     teams <- c(row$home[1], row$away[1])
     scores <- c(row$home_score[1], row$away_score[1])
     penalties <- c(row$home_penalty[1], row$away_penalty[1])
@@ -255,7 +357,7 @@ server <- function(input, output, session) {
   output$game_51 <- renderTable(game51_df())
   
   game59_df <- reactive({
-    row <- schedule_import()[schedule_import()$game_n == 59,]
+    row <- knockout_display()[knockout_display()$game_n == 59,]
     teams <- c(row$home[1], row$away[1])
     scores <- c(row$home_score[1], row$away_score[1])
     penalties <- c(row$home_penalty[1], row$away_penalty[1])
@@ -272,7 +374,7 @@ server <- function(input, output, session) {
   output$game_59 <- renderTable(game59_df())
   
   game52_df <- reactive({
-    row <- schedule_import()[schedule_import()$game_n == 52,]
+    row <- knockout_display()[knockout_display()$game_n == 52,]
     teams <- c(row$home[1], row$away[1])
     scores <- c(row$home_score[1], row$away_score[1])
     penalties <- c(row$home_penalty[1], row$away_penalty[1])
@@ -289,7 +391,7 @@ server <- function(input, output, session) {
   output$game_52 <- renderTable(game52_df())
   
   game55_df <- reactive({
-    row <- schedule_import()[schedule_import()$game_n == 55,]
+    row <- knockout_display()[knockout_display()$game_n == 55,]
     teams <- c(row$home[1], row$away[1])
     scores <- c(row$home_score[1], row$away_score[1])
     penalties <- c(row$home_penalty[1], row$away_penalty[1])
@@ -306,7 +408,7 @@ server <- function(input, output, session) {
   output$game_55 <- renderTable(game55_df())
   
   game60_df <- reactive({
-    row <- schedule_import()[schedule_import()$game_n == 60,]
+    row <- knockout_display()[knockout_display()$game_n == 60,]
     teams <- c(row$home[1], row$away[1])
     scores <- c(row$home_score[1], row$away_score[1])
     penalties <- c(row$home_penalty[1], row$away_penalty[1])
@@ -323,7 +425,7 @@ server <- function(input, output, session) {
   output$game_60 <- renderTable(game60_df())
   
   game56_df <- reactive({
-    row <- schedule_import()[schedule_import()$game_n == 56,]
+    row <- knockout_display()[knockout_display()$game_n == 56,]
     teams <- c(row$home[1], row$away[1])
     scores <- c(row$home_score[1], row$away_score[1])
     penalties <- c(row$home_penalty[1], row$away_penalty[1])
@@ -340,7 +442,7 @@ server <- function(input, output, session) {
   output$game_56 <- renderTable(game56_df())
   
   game61_dfa <- reactive({
-    row <- schedule_import()[schedule_import()$game_n == 61,]
+    row <- knockout_display()[knockout_display()$game_n == 61,]
     teams <- c(row$home[1], row$away[1])
     scores <- c(row$home_score[1], row$away_score[1])
     penalties <- c(row$home_penalty[1], row$away_penalty[1])
@@ -356,7 +458,7 @@ server <- function(input, output, session) {
   })
   output$game_61a <- renderTable(game61_dfa())
   game61_dfb <- reactive({
-    row <- schedule_import()[schedule_import()$game_n == 61,]
+    row <- knockout_display()[knockout_display()$game_n == 61,]
     teams <- c(row$home[1], row$away[1])
     scores <- c(row$home_score[1], row$away_score[1])
     penalties <- c(row$home_penalty[1], row$away_penalty[1])
@@ -373,7 +475,7 @@ server <- function(input, output, session) {
   output$game_61b <- renderTable(game61_dfb())
   
   game62_dfa <- reactive({
-    row <- schedule_import()[schedule_import()$game_n == 62,]
+    row <- knockout_display()[knockout_display()$game_n == 62,]
     teams <- c(row$home[1], row$away[1])
     scores <- c(row$home_score[1], row$away_score[1])
     penalties <- c(row$home_penalty[1], row$away_penalty[1])
@@ -389,7 +491,7 @@ server <- function(input, output, session) {
   })
   output$game_62a <- renderTable(game62_dfa())
   game62_dfb <- reactive({
-    row <- schedule_import()[schedule_import()$game_n == 62,]
+    row <- knockout_display()[knockout_display()$game_n == 62,]
     teams <- c(row$home[1], row$away[1])
     scores <- c(row$home_score[1], row$away_score[1])
     penalties <- c(row$home_penalty[1], row$away_penalty[1])
@@ -406,7 +508,7 @@ server <- function(input, output, session) {
   output$game_62b <- renderTable(game62_dfb())
   
   game64_dfa <- reactive({
-    row <- schedule_import()[schedule_import()$game_n == 64,]
+    row <- knockout_display()[knockout_display()$game_n == 64,]
     teams <- c(row$home[1], row$away[1])
     scores <- c(row$home_score[1], row$away_score[1])
     penalties <- c(row$home_penalty[1], row$away_penalty[1])
@@ -422,7 +524,7 @@ server <- function(input, output, session) {
   })
   output$game_64a <- renderTable(game64_dfa())
   game64_dfb <- reactive({
-    row <- schedule_import()[schedule_import()$game_n == 64,]
+    row <- knockout_display()[knockout_display()$game_n == 64,]
     teams <- c(row$home[1], row$away[1])
     scores <- c(row$home_score[1], row$away_score[1])
     penalties <- c(row$home_penalty[1], row$away_penalty[1])
@@ -439,7 +541,7 @@ server <- function(input, output, session) {
   output$game_64b <- renderTable(game64_dfb())
   
   game63_df <- reactive({
-    row <- schedule_import()[schedule_import()$game_n == 63,]
+    row <- knockout_display()[knockout_display()$game_n == 63,]
     teams <- c(row$home[1], row$away[1])
     scores <- c(row$home_score[1], row$away_score[1])
     penalties <- c(row$home_penalty[1], row$away_penalty[1])

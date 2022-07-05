@@ -12,7 +12,7 @@ where $W_{e}$ is winning expectancy, and $\delta r$ is the difference between th
 $$\frac{1}{{10^\frac{-d}{400}}+1}-\frac{1}{{10^\frac{-d}{400}}+1} = 0.235$$
 
 \begin{align*}
-d = & 400*ln \left(-\frac{0.235 + 1}{0.235 - 1}\right) \\
+d = & 400* \log_{10} \left(-\frac{0.235 + 1}{0.235 - 1}\right) \\
 d = & 83.202
 \end{align*}  
 

@@ -138,3 +138,26 @@ populate_percentates_groups <- function(group_tables, summary_table) {
   }
   return(group_tables)
 }
+
+
+
+create_game_display_df_list <- function(schedule_df) {
+  list_dfs <- list()
+  for (i in 1:nrow(schedule_df)) {
+    row <- schedule_df[i,]
+    teams <- c(row$home[1], row$away[1])
+    scores <- c(row$home_score[1], row$away_score[1])
+    penalties <- c(row$home_penalty[1], row$away_penalty[1])
+    df <- data.frame(date = row$date,
+                     time_ET = row$time_est,
+                     TV = row$TV,
+                     group = row$group,
+                     country = teams,
+                     score = scores)
+    if (!is.na(penalties[1])) {
+      df$penalties <- penalties
+    }
+    list_dfs[[i]] <- df
+  }
+  return(list_dfs)
+}

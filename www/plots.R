@@ -24,7 +24,7 @@ label_list <- c("start", "group game 1", "group game 2", "group game 3",
 # label_list <- c("start", "group_1", "group_2", "group_3",
 #                 "knockout_1", "quarters", "semis", "final")
 
-create_plotly_KO_chance <- function(prediction_df, n_reps) {
+create_plotly_KO_chance <- function(prediction_df, n_reps, error_type = "No") {
   team_list <- unique(prediction_df$country)
   color_list <- colors[team_list,]
   
@@ -35,8 +35,23 @@ create_plotly_KO_chance <- function(prediction_df, n_reps) {
     theme(panel.grid = element_blank()) +
     scale_x_continuous(breaks = 0:max(prediction_df$matchday), labels = label_list[1:(max(prediction_df$matchday)+1)]) +
     scale_colour_manual(values = color_list) +
-    scale_y_continuous(limits = c(0,100), breaks = (seq(0,100,10)))
-    labs(x = "Tournament Stage", y = "% Chance", title = paste0("Advance to KOs (based on ", (n_reps %/% 10) * 10, " simulations)"))
+    scale_y_continuous(breaks = (seq(0,100,10))) +
+    labs(x = "Tournament Stage", y = "% Chance", title = paste0("Advance to KOs (based on ", (n_reps %/% 10) * 10, " simulations)")) +
+    coord_cartesian(ylim = c(0,100))
+
+  
+  if (error_type == "Error Bars") {
+    plot <- plot + geom_errorbar(aes(x = matchday, ymin = advance_perc_avg - advance_perc_sd,
+                                     ymax = advance_perc_avg + advance_perc_sd, 
+                                     color = country), alpha = 0.5, width = 0.1)
+  } else if (error_type == "Shading") {
+    plot <- plot + geom_ribbon(aes(x = matchday, ymin = advance_perc_avg - advance_perc_sd,
+                                   ymax = advance_perc_avg + advance_perc_sd, 
+                                   fill = country), alpha = 0.1) +
+                                   scale_fill_manual(values = color_list)
+  }
+  
+  
   
   plotly_return <- ggplotly(plot,
            tooltip = c("x", "y", "colour", "plus_minus"))
@@ -48,7 +63,7 @@ create_plotly_KO_chance <- function(prediction_df, n_reps) {
   return(plotly_return)
 }
 
-create_plotly_group_win_chance <- function(prediction_df, n_reps) {
+create_plotly_group_win_chance <- function(prediction_df, n_reps, error_type = "No") {
   team_list <- unique(prediction_df$country)
   color_list <- colors[team_list,]
   
@@ -59,8 +74,21 @@ create_plotly_group_win_chance <- function(prediction_df, n_reps) {
     theme(panel.grid = element_blank()) +
     scale_x_continuous(breaks = 0:max(prediction_df$matchday), labels = label_list[1:(max(prediction_df$matchday)+1)]) +
     scale_colour_manual(values = color_list) +
-    scale_y_continuous(limits = c(0,100), breaks = (seq(0,100,10)))
-  labs(x = "Tournament Stage", y = "% Chance", title = paste0("Win Group (based on ", (n_reps %/% 10) * 10, " simulations)"))
+    scale_y_continuous(breaks = (seq(0,100,10))) +
+    labs(x = "Tournament Stage", y = "% Chance", title = paste0("Win Group (based on ", (n_reps %/% 10) * 10, " simulations)")) +
+    coord_cartesian(ylim = c(0,100))
+  
+  
+  if (error_type == "Error Bars") {
+    plot <- plot + geom_errorbar(aes(x = matchday, ymin = group_win_perc_avg - group_win_perc_sd,
+                                     ymax = group_win_perc_avg + group_win_perc_sd, 
+                                     color = country), alpha = 0.5, width = 0.1)
+  } else if (error_type == "Shading") {
+    plot <- plot + geom_ribbon(aes(x = matchday, ymin = group_win_perc_avg - group_win_perc_sd,
+                                   ymax = group_win_perc_avg + group_win_perc_sd, 
+                                   fill = country), alpha = 0.1) +
+      scale_fill_manual(values = color_list)
+  }
   
   plotly_return <- ggplotly(plot,
                             tooltip = c("x", "y", "colour", "plus_minus"))
@@ -72,7 +100,7 @@ create_plotly_group_win_chance <- function(prediction_df, n_reps) {
   return(plotly_return)
 }
 
-create_plotly_quarters_chance <- function(prediction_df, n_reps) {
+create_plotly_quarters_chance <- function(prediction_df, n_reps, error_type = "No") {
   team_list <- unique(prediction_df$country)
   color_list <- colors[team_list,]
   
@@ -83,8 +111,22 @@ create_plotly_quarters_chance <- function(prediction_df, n_reps) {
     theme(panel.grid = element_blank()) +
     scale_x_continuous(breaks = 0:max(prediction_df$matchday), labels = label_list[1:(max(prediction_df$matchday)+1)]) +
     scale_colour_manual(values = color_list) +
-    scale_y_continuous(limits = c(0,100), breaks = (seq(0,100,10)))
-  labs(x = "Tournament Stage", y = "% Chance", title = paste0("Make Quarter Finals (based on ", (n_reps %/% 10) * 10, " simulations)"))
+    scale_y_continuous(breaks = (seq(0,100,10))) +
+    labs(x = "Tournament Stage", y = "% Chance", title = paste0("Make Quarter Finals (based on ", (n_reps %/% 10) * 10, " simulations)")) +
+    coord_cartesian(ylim = c(0,100))
+  
+  
+  
+  if (error_type == "Error Bars") {
+    plot <- plot + geom_errorbar(aes(x = matchday, ymin = quarters_perc_avg - quarters_perc_sd,
+                                     ymax = quarters_perc_avg + quarters_perc_sd, 
+                                     color = country), alpha = 0.5, width = 0.1)
+  } else if (error_type == "Shading") {
+    plot <- plot + geom_ribbon(aes(x = matchday, ymin = quarters_perc_avg - quarters_perc_sd,
+                                   ymax = quarters_perc_avg + quarters_perc_sd, 
+                                   fill = country), alpha = 0.1) +
+      scale_fill_manual(values = color_list)
+  }
   
   plotly_return <- ggplotly(plot,
                             tooltip = c("x", "y", "colour", "plus_minus"))
@@ -96,7 +138,7 @@ create_plotly_quarters_chance <- function(prediction_df, n_reps) {
   return(plotly_return)
 }
 
-create_plotly_semis_chance <- function(prediction_df, n_reps) {
+create_plotly_semis_chance <- function(prediction_df, n_reps, error_type  = "No") {
   team_list <- unique(prediction_df$country)
   color_list <- colors[team_list,]
   
@@ -107,8 +149,21 @@ create_plotly_semis_chance <- function(prediction_df, n_reps) {
     theme(panel.grid = element_blank()) +
     scale_x_continuous(breaks = 0:max(prediction_df$matchday), labels = label_list[1:(max(prediction_df$matchday)+1)]) +
     scale_colour_manual(values = color_list) +
-    scale_y_continuous(limits = c(0,100), breaks = (seq(0,100,10)))
-  labs(x = "Tournament Stage", y = "% Chance", title = paste0("Make Semi Finals (based on ", (n_reps %/% 10) * 10, " simulations)"))
+    scale_y_continuous(breaks = (seq(0,100,10))) +
+    labs(x = "Tournament Stage", y = "% Chance", title = paste0("Make Semi Finals (based on ", (n_reps %/% 10) * 10, " simulations)")) +
+    coord_cartesian(ylim = c(0,100))
+  
+  
+  if (error_type == "Error Bars") {
+    plot <- plot + geom_errorbar(aes(x = matchday, ymin = semis_perc_avg - semis_perc_sd,
+                                     ymax = semis_perc_avg + semis_perc_sd, 
+                                     color = country), alpha = 0.5, width = 0.1)
+  } else if (error_type == "Shading") {
+    plot <- plot + geom_ribbon(aes(x = matchday, ymin = semis_perc_avg - semis_perc_sd,
+                                   ymax = semis_perc_avg + semis_perc_sd, 
+                                   fill = country), alpha = 0.1) +
+      scale_fill_manual(values = color_list)
+  }
   
   plotly_return <- ggplotly(plot,
                             tooltip = c("x", "y", "colour", "plus_minus"))
@@ -120,7 +175,7 @@ create_plotly_semis_chance <- function(prediction_df, n_reps) {
   return(plotly_return)
 }
 
-create_plotly_finals_chance <- function(prediction_df, n_reps) {
+create_plotly_finals_chance <- function(prediction_df, n_reps, error_type = "No") {
   team_list <- unique(prediction_df$country)
   color_list <- colors[team_list,]
   
@@ -131,8 +186,21 @@ create_plotly_finals_chance <- function(prediction_df, n_reps) {
     theme(panel.grid = element_blank()) +
     scale_x_continuous(breaks = 0:max(prediction_df$matchday), labels = label_list[1:(max(prediction_df$matchday)+1)]) +
     scale_colour_manual(values = color_list) +
-    scale_y_continuous(limits = c(0,100), breaks = (seq(0,100,10)))
-  labs(x = "Tournament Stage", y = "% Chance", title = paste0("Make Final (based on ", (n_reps %/% 10) * 10, " simulations)"))
+    scale_y_continuous(breaks = (seq(0,100,10))) +
+    labs(x = "Tournament Stage", y = "% Chance", title = paste0("Make Final (based on ", (n_reps %/% 10) * 10, " simulations)"))  +
+    coord_cartesian(ylim = c(0,100))
+  
+  
+  if (error_type == "Error Bars") {
+    plot <- plot + geom_errorbar(aes(x = matchday, ymin = finals_perc_avg - finals_perc_sd,
+                                     ymax = finals_perc_avg + finals_perc_sd, 
+                                     color = country), alpha = 0.5, width = 0.1)
+  } else if (error_type == "Shading") {
+    plot <- plot + geom_ribbon(aes(x = matchday, ymin = finals_perc_avg - finals_perc_sd,
+                                   ymax = finals_perc_avg + finals_perc_sd, 
+                                   fill = country), alpha = 0.1) +
+      scale_fill_manual(values = color_list)
+  }
   
   plotly_return <- ggplotly(plot,
                             tooltip = c("x", "y", "colour", "plus_minus"))
@@ -144,7 +212,7 @@ create_plotly_finals_chance <- function(prediction_df, n_reps) {
   return(plotly_return)
 }
 
-create_plotly_champions_chance <- function(prediction_df, n_reps) {
+create_plotly_champions_chance <- function(prediction_df, n_reps, error_type = "No") {
   team_list <- unique(prediction_df$country)
   color_list <- colors[team_list,]
   
@@ -155,8 +223,22 @@ create_plotly_champions_chance <- function(prediction_df, n_reps) {
     theme(panel.grid = element_blank()) +
     scale_x_continuous(breaks = 0:max(prediction_df$matchday), labels = label_list[1:(max(prediction_df$matchday)+1)]) +
     scale_colour_manual(values = color_list) +
-    scale_y_continuous(limits = c(0,100), breaks = (seq(0,100,10)))
-  labs(x = "Tournament Stage", y = "% Chance", title = paste0("Win World Cup (based on ", (n_reps %/% 10) * 10, " simulations)"))
+    scale_y_continuous( breaks = (seq(0,100,10))) +
+    labs(x = "Tournament Stage", y = "% Chance", title = paste0("Win World Cup (based on ", (n_reps %/% 10) * 10, " simulations)")) +
+    coord_cartesian(ylim = c(0,100))
+  
+  
+  
+  if (error_type == "Error Bars") {
+    plot <- plot + geom_errorbar(aes(x = matchday, ymin = champions_perc_avg - champions_perc_sd,
+                                     ymax = champions_perc_avg + champions_perc_sd, 
+                                     color = country), alpha = 0.5, width = 0.1)
+  } else if (error_type == "Shading") {
+    plot <- plot + geom_ribbon(aes(x = matchday, ymin = champions_perc_avg - champions_perc_sd,
+                                   ymax = champions_perc_avg + champions_perc_sd, 
+                                   fill = country), alpha = 0.1) +
+      scale_fill_manual(values = color_list)
+  }
   
   plotly_return <- ggplotly(plot,
                             tooltip = c("x", "y", "colour", "plus_minus"))
