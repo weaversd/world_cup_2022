@@ -1,3 +1,8 @@
+elo_rankings <- read.table("www/WF_elo_ratings.csv", sep = ",", header = T)
+team_list <- elo_rankings$Country
+goal_probabilities <- read.csv("www/goal_number_probabilities.csv", sep = ",",
+                               header = T)
+
 populate_winner_loser <- function(schedule_df){
   for (i in 1:nrow(schedule_df)) {
     if (!is.na(schedule_df$home_score[i]) && !is.na(schedule_df$away_score[i])) {
@@ -30,7 +35,7 @@ populate_winner_loser <- function(schedule_df){
 }
 
 
-create_group_tables <- function(schedule_df){
+create_group_tables <- function(schedule_df, updateProgress = NULL){
    group_tables <- list()
    for (group in LETTERS[1:8]) {
        group_games <- schedule_df[schedule_df$group == group,]
@@ -99,6 +104,7 @@ create_group_tables <- function(schedule_df){
              group_table$GD <- group_table$GS - group_table$GA
              group_table$Pts <- group_table$D + (3*group_table$W)
              group_table <- group_table[order(-group_table$Pts, -group_table$GD, -group_table$GS),]
+             row.names(group_table) <- NULL
 
              group_tables[[group]] <- group_table
         }
@@ -161,3 +167,32 @@ create_game_display_df_list <- function(schedule_df) {
   }
   return(list_dfs)
 }
+
+image1 <- sprintf("data:image/png;base64,%s", base64encode("www/FS1.png"))
+image2 <- sprintf("data:image/png;base64,%s", base64encode("www/FOX.png"))
+flag_image <- function(country) {
+  image <- sprintf("data:image/png;base64,%s", base64encode(paste0("www/flag_images/", country, ".png")))
+  return(image)
+}
+
+flag_list <- list()
+for (team in team_list) {
+  flag_list[[team]] <- paste0("www/flag_images/", team, ".png")
+}
+
+flag_list_encoded <- list()
+for (team in team_list) {
+  flag_list_encoded[[team]] <- sprintf("data:image/png;base64,%s", base64encode(paste0("www/flag_images/", team, ".png")))
+}
+
+tv_image_tile <- formatter("img",
+                           src = x ~ ifelse(x == "FS1", image1, image2),
+                           width = 30, 
+                           NA)
+flag_image_tile <- formatter("img",
+                             src = x ~ lapply(x, function(i) {
+                               flag_list_encoded[[i]]
+                             }),
+                             width = 30,
+                             NA)
+

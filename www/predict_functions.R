@@ -1,8 +1,5 @@
 
-elo_rankings <- read.table("www/WF_elo_ratings.csv", sep = ",", header = T)
-team_list <- elo_rankings$Country
-goal_probabilities <- read.csv("www/goal_number_probabilities.csv", sep = ",",
-                               header = T)
+
 
 
 #historical draw probability if 0.235 -> d = 83.202
