@@ -120,7 +120,13 @@ ui <- navbarPage(title = "World Cup 2022",
                                          tabPanel("Advance Quarters", withSpinner(plotlyOutput("quarters_plotly", height = 600)), tags$hr()),
                                          tabPanel("Advance Semis", withSpinner(plotlyOutput("semis_plotly", height = 600)), tags$hr()),
                                          tabPanel("Advance Finals", withSpinner(plotlyOutput("finals_plotly", height = 600)), tags$hr()))),
-                              tabPanel("Stats", "coming soon")
+                              tabPanel("Stats",
+                                       tags$hr(),
+                                       tabsetPanel(
+                                         tabPanel("Goals For", withSpinner(plotlyOutput("GF_plot", height = 600))),
+                                         tabPanel("Goals Against", withSpinner(plotlyOutput("GA_plot", height = 600))),
+                                         tabPanel("Goal Difference", withSpinner(plotlyOutput("GD_plot", height = 600))),
+                                       ))
                             ))),
                  tabPanel("How this works",
                           includeMarkdown("Documentation.md"))

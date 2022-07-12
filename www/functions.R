@@ -58,7 +58,7 @@ create_group_tables <- function(schedule_df, updateProgress = NULL){
                                  won_vs = "",
                                  lost_vs = "",
                                  drew_vs = "")
-       
+       group_table <- add_column(group_table, "&nbsp" = group_teams, .before = "country")
          for (team in group_teams) {
              team_games <- group_games[group_games$away == team | group_games$home == team,]
              team_games <- team_games[!is.na(team_games$home_score),]
@@ -105,9 +105,10 @@ create_group_tables <- function(schedule_df, updateProgress = NULL){
              group_table$Pts <- group_table$D + (3*group_table$W)
              group_table <- group_table[order(-group_table$Pts, -group_table$GD, -group_table$GS),]
              row.names(group_table) <- NULL
-
-             group_tables[[group]] <- group_table
-        }
+             
+             
+         }
+       group_tables[[group]] <- group_table
    }
    return(group_tables)
  }
@@ -163,6 +164,7 @@ create_game_display_df_list <- function(schedule_df) {
     if (!is.na(penalties[1])) {
       df$penalties <- penalties
     }
+    df <- add_column(df, "&nbsp" = df$country, .before = "country")
     list_dfs[[i]] <- df
   }
   return(list_dfs)
@@ -195,4 +197,51 @@ flag_image_tile <- formatter("img",
                              }),
                              width = 30,
                              NA)
+
+
+create_goal_stat_df <- function(schedule_df) {
+  if (all(is.na(schedule_df$home_score))) {
+    return(data.frame(country = team_list[order(team_list)],
+                      GF = 0,
+                      GA = 0,
+                      GD = 0,
+                      game_n = 0))
+  } else {
+    goal_stat_list <- list()
+    for (team in team_list) {
+      team_df <- schedule_df[schedule_df$home == team | schedule_df$away == team,]
+      team_df <- team_df[!is.na(team_df$home_score),]
+      if (nrow(team_df) == 0) {
+        break
+      }
+      goals_for_vec <- rep(0, nrow(team_df) +1)
+      goals_against_vec <- rep(0, nrow(team_df) +1)
+      goal_dif_vec <- rep(0, nrow(team_df) +1)
+      game_count_vec <- rep(0, nrow(team_df) +1)
+      for (i in 1:nrow(team_df)) {
+        temp <- team_df[i,]
+        if (temp$home[1] == team) {
+          goals_for_vec[i+1] <- temp$home_score[1] +goals_for_vec[i]
+          goals_against_vec[i+1] <- temp$away_score[1] + goals_against_vec[i]
+        } else {
+          goals_for_vec[i+1] <- temp$away_score[1] +goals_for_vec[i]
+          goals_against_vec[i+1] <- temp$home_score[1] + goals_against_vec[i]
+        }
+        goal_dif_vec[i+1] <- (goals_for_vec[i+1] - goals_against_vec[i+1]) + goal_dif_vec[i]
+        game_count_vec[i+1] <- i
+      }
+      team_goal_df <- data.frame(country = team,
+                                 GF = goals_for_vec,
+                                 GA = goals_against_vec,
+                                 GD = goal_dif_vec,
+                                 game_n = game_count_vec)
+      goal_stat_list[[team]] <- team_goal_df
+    }
+    goal_plot_df <- bind_rows(goal_stat_list)
+    goal_plot_df <- goal_plot_df[order(goal_plot_df$country),]
+    return(goal_plot_df)
+  }
+}
+
+
 

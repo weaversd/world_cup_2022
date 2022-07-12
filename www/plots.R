@@ -249,3 +249,54 @@ create_plotly_champions_chance <- function(prediction_df, n_reps, error_type = "
   
   return(plotly_return)
 }
+
+
+create_goals_for_plotly <- function(goal_stat_df) {
+  team_list <- unique(goal_stat_df$country)
+  color_list <- colors[team_list,]
+  plot <- ggplot(goal_stat_df, aes(x = game_n, y = GF, color = country)) +
+    geom_line() +
+    geom_point() +
+    theme_bw(base_size = 10) +
+    theme(panel.grid = element_blank()) +
+    labs(x = "Game Number", y = "Goals For", title = "Goals Scored") +
+    scale_colour_manual(values = color_list) +
+    scale_y_continuous(breaks = 0:max(goal_stat_df$GF))
+  
+  plotly <- ggplotly(plot)
+  return(plotly)
+}
+
+create_goals_against_plotly <- function(goal_stat_df) {
+  team_list <- unique(goal_stat_df$country)
+  color_list <- colors[team_list,]
+  plot <- ggplot(goal_stat_df, aes(x = game_n, y = GA, color = country)) +
+    geom_line() +
+    geom_point() +
+    theme_bw(base_size = 10) +
+    theme(panel.grid = element_blank()) +
+    labs(x = "Game Number", y = "Goals Against", title = "Goals Allowed") +
+    scale_colour_manual(values = color_list) +
+    scale_y_continuous(breaks = 0:max(goal_stat_df$GA))
+  
+  plotly <- ggplotly(plot)
+  return(plotly)
+}
+
+create_goal_dif_plotly <- function(goal_stat_df) {
+  
+  team_list <- unique(goal_stat_df$country)
+  color_list <- colors[team_list,]
+  plot <- ggplot(goal_stat_df, aes(x = game_n, y = GD, color = country)) +
+    geom_hline(yintercept = 0, lwd = 0.1, color = "deeppink", linetype = 2)+
+    geom_line() +
+    geom_point() +
+    theme_bw(base_size = 10) +
+    theme(panel.grid = element_blank()) +
+    labs(x = "Game Number", y = "Goal Difference", title = "Goal Difference") +
+    scale_colour_manual(values = color_list) +
+    scale_y_continuous(breaks = min(goal_stat_df$GD):max(goal_stat_df$GD))
+  
+  plotly <- ggplotly(plot)
+  return(plotly)
+}

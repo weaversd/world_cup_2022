@@ -40,9 +40,18 @@ server <- function(input, output, session) {
   output$todays_games_dfs <- renderUI({
     if(length(todays_games_list()) > 0) {
       lapply(1:length(todays_games_list()), function(i){
-        output[[paste0("todays_game",i)]] <- renderFormattable(formattable(todays_games_list()[[i]],
-                                                                           list(TV = tv_image_tile,
-                                                                                score = color_tile("#ff8989", "lightgreen"))))
+        if (todays_games_list()[[i]]$score[1] == todays_games_list()[[i]]$score[2]&& !is.na(todays_games_list()[[i]]$score[1])) {
+          output[[paste0("todays_game",i)]] <- renderFormattable(formattable(todays_games_list()[[i]],
+                                                                             list("&nbsp" = flag_image_tile,
+                                                                                  TV = tv_image_tile,
+                                                                                  score = color_tile("yellow", "yellow"),
+                                                                                  penalties = color_tile("#ff8989", "lightgreen"))))
+        } else {
+          output[[paste0("todays_game",i)]] <- renderFormattable(formattable(todays_games_list()[[i]],
+                                                                             list("&nbsp" = flag_image_tile,
+                                                                                  TV = tv_image_tile,
+                                                                                  score = color_tile("#ff8989", "lightgreen"))))
+        }
         formattableOutput(paste0("todays_game", i))
       })
     } else {
@@ -62,10 +71,20 @@ server <- function(input, output, session) {
   output$future_games_df <- renderUI({
     if(length(future_games_list()) > 0) {
       lapply(1:length(future_games_list()), function(i){
+        if (future_games_list()[[i]]$score[1] == future_games_list()[[i]]$score[2]&& !is.na(future_games_list()[[i]]$score[1])) {
+          output[[paste0("future_game",i)]] <- renderFormattable(formattable(future_games_list()[[i]],
+                                                                             list("&nbsp" = flag_image_tile,
+                                                                                  TV = tv_image_tile,
+                                                                                  score = color_tile("yellow", "yellow"),
+                                                                                  penalties = color_tile("#ff8989", "lightgreen"))))
+        } else {
+          output[[paste0("future_game",i)]] <- renderFormattable(formattable(future_games_list()[[i]],
+                                                                             list("&nbsp" = flag_image_tile,
+                                                                                  TV = tv_image_tile,
+                                                                                  score = color_tile("#ff8989", "lightgreen"))))
+        }
         
-        output[[paste0("future_game",i)]] <- renderFormattable(formattable(future_games_list()[[i]],
-                                                                           list(TV = tv_image_tile,
-                                                                                score = color_tile("#ff8989", "lightgreen"))))
+       
         formattableOutput(paste0("future_game", i))
       })
     } else {
@@ -87,12 +106,14 @@ server <- function(input, output, session) {
       lapply(1:length(search_games_list()), function(i){
         if (search_games_list()[[i]]$score[1] == search_games_list()[[i]]$score[2]&& !is.na(search_games_list()[[i]]$score[1])) {
           output[[paste0("search_game",i)]] <- renderFormattable(formattable(search_games_list()[[i]],
-                                                                             list(TV = tv_image_tile,
+                                                                             list("&nbsp" = flag_image_tile,
+                                                                                  TV = tv_image_tile,
                                                                                   score = color_tile("yellow", "yellow"),
                                                                                   penalties = color_tile("#ff8989", "lightgreen"))))
         } else {
           output[[paste0("search_game",i)]] <- renderFormattable(formattable(search_games_list()[[i]],
-                                                                             list(TV = tv_image_tile,
+                                                                             list("&nbsp" = flag_image_tile,
+                                                                                  TV = tv_image_tile,
                                                                                   score = color_tile("#ff8989", "lightgreen"))))
         }
         formattableOutput(paste0("search_game", i))
@@ -157,6 +178,8 @@ server <- function(input, output, session) {
     } else {
       temp
     }
+    temp <- temp %>% relocate(home_score, .after = "&nbsp")
+    temp <- temp %>% relocate(away_score, .before = "&nbsp&nbsp")
     return(temp)
   })
   
@@ -187,17 +210,33 @@ server <- function(input, output, session) {
       for (i in length(temp)) {
         temp[[i]] <- temp[[i]][order(-temp[[i]]$Pts, -temp[[i]]$GD, -temp[[i]]$GS, -temp[[i]]$win_group_percent, -temp[[i]]$advance_KO_percent),]
       }
-      return(temp)
     } else {
-      create_group_tables(schedule_import())
+      temp <- create_group_tables(schedule_import())
     }
+    return(temp)
   })
   
   
   output$schedule <- renderFormattable(formattable(display_schedule(),
+                                                   align = c("c","c","c","c","c","c","c","c","r","c","c","c","c","l","c","c","c","c","c"),
                                                    list("&nbsp" = flag_image_tile,
                                                         "&nbsp&nbsp" = flag_image_tile,
                                                         TV = tv_image_tile,
+                                                        home_score = formatter("span",
+                                                                         style = ~style(display = "block",
+                                                                                        padding = "0 4px",
+                                                                                        `border-radius` = "4px",
+                                                                                        `background-color` = ifelse(winner == home, "lightgreen", ifelse(
+                                                                                          loser == home, "#ff8989", ifelse(winner == "Draw", "#89edff", "white")
+                                                                                        )))),
+                                                        away_score = formatter("span",
+                                                                         style = ~style(display = "block",
+                                                                                        padding = "0 4px",
+                                                                                        `border-radius` = "4px",
+                                                                                        `background-color` = ifelse(winner == home, "#ff8989", ifelse(
+                                                                                          loser == home, "lightgreen", ifelse(winner == "Draw", "#89edff", "white")
+                                                                                        )))),
+                                                        
                                                         home = formatter("span",
                                                                          style = ~style(display = "block",
                                                                                         padding = "0 4px",
@@ -218,7 +257,8 @@ server <- function(input, output, session) {
   lapply(LETTERS[1:8], function(i){ 
     output[[paste0("table_",i)]] <- renderFormattable({
       formattable(table_list()[[i]],
-                  list(Pts = color_tile("transparent", "#89edff"),
+                  list("&nbsp" = flag_image_tile,
+                       Pts = color_tile("transparent", "#89edff"),
                        W = color_tile("transparent", "lightgreen"),
                        L = color_tile("transparent", "#ff8989"),
                        D = color_tile("transparent", "yellow"),
@@ -275,6 +315,15 @@ server <- function(input, output, session) {
   output$win_group_plotly <- renderPlotly(create_plotly_group_win_chance(display_prediction(), input$predict_overall_n, input$error_type))
   
   
+  
+  
+  goal_plot_df <- reactive(create_goal_stat_df(schedule_import()))
+  output$GF_plot <- renderPlotly(create_goals_for_plotly(goal_plot_df()))
+  output$GA_plot <- renderPlotly(create_goals_against_plotly(goal_plot_df()))
+  output$GD_plot <- renderPlotly(create_goal_dif_plotly(goal_plot_df()))
+  
+  
+  
   #knockout games
   knockout_display <- reactive({
     temp <- schedule_import()
@@ -294,6 +343,7 @@ server <- function(input, output, session) {
     if(scores[1] ==  scores[2] && !is.na(scores[1])) {
       return$penalties <- penalties
     }
+    return <- add_column(return, "&nbsp" = teams, .after = "TV")
     return(return)
   })
   output$game_49 <- renderFormattable({
@@ -301,10 +351,12 @@ server <- function(input, output, session) {
       formattable(game49_df(),
                   list(TV = tv_image_tile,
                        score = color_tile("yellow", "yellow"),
+                       "&nbsp" = flag_image_tile,
                        penalties = color_tile("#ff8989", "lightgreen")))
     } else {
       formattable(game49_df(),
                   list(TV = tv_image_tile,
+                       "&nbsp" = flag_image_tile,
                        score = color_tile("#ff8989", "lightgreen")))
     }
   })
@@ -322,6 +374,7 @@ server <- function(input, output, session) {
     if(scores[1] ==  scores[2] && !is.na(scores[1])) {
       return$penalties <- penalties
     }
+    return <- add_column(return, "&nbsp" = teams, .after = "TV")
     return(return)
   })
   output$game_57 <- renderFormattable({
@@ -329,10 +382,12 @@ server <- function(input, output, session) {
       formattable(game57_df(),
                   list(TV = tv_image_tile,
                        score = color_tile("yellow", "yellow"),
+                       "&nbsp" = flag_image_tile,
                        penalties = color_tile("#ff8989", "lightgreen")))
     } else {
       formattable(game57_df(),
                   list(TV = tv_image_tile,
+                       "&nbsp" = flag_image_tile,
                        score = color_tile("#ff8989", "lightgreen")))
     }
   })
@@ -350,6 +405,7 @@ server <- function(input, output, session) {
     if(scores[1] ==  scores[2] && !is.na(scores[1])) {
       return$penalties <- penalties
     }
+    return <- add_column(return, "&nbsp" = teams, .after = "TV")
     return(return)
   })
   output$game_50 <- renderFormattable({
@@ -357,10 +413,12 @@ server <- function(input, output, session) {
       formattable(game50_df(),
                   list(TV = tv_image_tile,
                        score = color_tile("yellow", "yellow"),
+                       "&nbsp" = flag_image_tile,
                        penalties = color_tile("#ff8989", "lightgreen")))
     } else {
       formattable(game50_df(),
                   list(TV = tv_image_tile,
+                       "&nbsp" = flag_image_tile,
                        score = color_tile("#ff8989", "lightgreen")))
     }
   })
@@ -378,6 +436,7 @@ server <- function(input, output, session) {
     if(scores[1] ==  scores[2] && !is.na(scores[1])) {
       return$penalties <- penalties
     }
+    return <- add_column(return, "&nbsp" = teams, .after = "TV")
     return(return)
   })
   output$game_53 <- renderFormattable({
@@ -385,10 +444,12 @@ server <- function(input, output, session) {
       formattable(game53_df(),
                   list(TV = tv_image_tile,
                        score = color_tile("yellow", "yellow"),
+                       "&nbsp" = flag_image_tile,
                        penalties = color_tile("#ff8989", "lightgreen")))
     } else {
       formattable(game53_df(),
                   list(TV = tv_image_tile,
+                       "&nbsp" = flag_image_tile,
                        score = color_tile("#ff8989", "lightgreen")))
     }
   })
@@ -407,6 +468,7 @@ server <- function(input, output, session) {
     if(scores[1] ==  scores[2] && !is.na(scores[1])) {
       return$penalties <- penalties
     }
+    return <- add_column(return, "&nbsp" = teams, .after = "TV")
     return(return)
   })
   output$game_58 <- renderFormattable({
@@ -414,10 +476,12 @@ server <- function(input, output, session) {
       formattable(game58_df(),
                   list(TV = tv_image_tile,
                        score = color_tile("yellow", "yellow"),
+                       "&nbsp" = flag_image_tile,
                        penalties = color_tile("#ff8989", "lightgreen")))
     } else {
       formattable(game58_df(),
                   list(TV = tv_image_tile,
+                       "&nbsp" = flag_image_tile,
                        score = color_tile("#ff8989", "lightgreen")))
     }
   })
@@ -435,6 +499,7 @@ server <- function(input, output, session) {
     if(scores[1] ==  scores[2] && !is.na(scores[1])) {
       return$penalties <- penalties
     }
+    return <- add_column(return, "&nbsp" = teams, .after = "TV")
     return(return)
   })
   output$game_54 <- renderFormattable({
@@ -442,10 +507,12 @@ server <- function(input, output, session) {
       formattable(game54_df(),
                   list(TV = tv_image_tile,
                        score = color_tile("yellow", "yellow"),
+                       "&nbsp" = flag_image_tile,
                        penalties = color_tile("#ff8989", "lightgreen")))
     } else {
       formattable(game54_df(),
                   list(TV = tv_image_tile,
+                       "&nbsp" = flag_image_tile,
                        score = color_tile("#ff8989", "lightgreen")))
     }
   })
@@ -463,6 +530,7 @@ server <- function(input, output, session) {
     if(scores[1] ==  scores[2] && !is.na(scores[1])) {
       return$penalties <- penalties
     }
+    return <- add_column(return, "&nbsp" = teams, .after = "TV")
     return(return)
   })
   output$game_51 <- renderFormattable({
@@ -470,10 +538,12 @@ server <- function(input, output, session) {
       formattable(game51_df(),
                   list(TV = tv_image_tile,
                        score = color_tile("yellow", "yellow"),
+                       "&nbsp" = flag_image_tile,
                        penalties = color_tile("#ff8989", "lightgreen")))
     } else {
       formattable(game51_df(),
                   list(TV = tv_image_tile,
+                       "&nbsp" = flag_image_tile,
                        score = color_tile("#ff8989", "lightgreen")))
     }
   })
@@ -491,6 +561,7 @@ server <- function(input, output, session) {
     if(scores[1] ==  scores[2] && !is.na(scores[1])) {
       return$penalties <- penalties
     }
+    return <- add_column(return, "&nbsp" = teams, .after = "TV")
     return(return)
   })
   output$game_59 <- renderFormattable({
@@ -498,10 +569,12 @@ server <- function(input, output, session) {
       formattable(game59_df(),
                   list(TV = tv_image_tile,
                        score = color_tile("yellow", "yellow"),
+                       "&nbsp" = flag_image_tile,
                        penalties = color_tile("#ff8989", "lightgreen")))
     } else {
       formattable(game59_df(),
                   list(TV = tv_image_tile,
+                       "&nbsp" = flag_image_tile,
                        score = color_tile("#ff8989", "lightgreen")))
     }
   })
@@ -519,6 +592,7 @@ server <- function(input, output, session) {
     if(scores[1] ==  scores[2] && !is.na(scores[1])) {
       return$penalties <- penalties
     }
+    return <- add_column(return, "&nbsp" = teams, .after = "TV")
     return(return)
   })
   output$game_52 <- renderFormattable({
@@ -526,10 +600,12 @@ server <- function(input, output, session) {
       formattable(game52_df(),
                   list(TV = tv_image_tile,
                        score = color_tile("yellow", "yellow"),
+                       "&nbsp" = flag_image_tile,
                        penalties = color_tile("#ff8989", "lightgreen")))
     } else {
       formattable(game52_df(),
                   list(TV = tv_image_tile,
+                       "&nbsp" = flag_image_tile,
                        score = color_tile("#ff8989", "lightgreen")))
     }
   })
@@ -547,6 +623,7 @@ server <- function(input, output, session) {
     if(scores[1] ==  scores[2] && !is.na(scores[1])) {
       return$penalties <- penalties
     }
+    return <- add_column(return, "&nbsp" = teams, .after = "TV")
     return(return)
   })
   output$game_55 <- renderFormattable({
@@ -554,10 +631,12 @@ server <- function(input, output, session) {
       formattable(game55_df(),
                   list(TV = tv_image_tile,
                        score = color_tile("yellow", "yellow"),
+                       "&nbsp" = flag_image_tile,
                        penalties = color_tile("#ff8989", "lightgreen")))
     } else {
       formattable(game55_df(),
                   list(TV = tv_image_tile,
+                       "&nbsp" = flag_image_tile,
                        score = color_tile("#ff8989", "lightgreen")))
     }
   })
@@ -575,6 +654,7 @@ server <- function(input, output, session) {
     if(scores[1] ==  scores[2] && !is.na(scores[1])) {
       return$penalties <- penalties
     }
+    return <- add_column(return, "&nbsp" = teams, .after = "TV")
     return(return)
   })
   output$game_60 <- renderFormattable({
@@ -582,10 +662,12 @@ server <- function(input, output, session) {
       formattable(game60_df(),
                   list(TV = tv_image_tile,
                        score = color_tile("yellow", "yellow"),
+                       "&nbsp" = flag_image_tile,
                        penalties = color_tile("#ff8989", "lightgreen")))
     } else {
       formattable(game60_df(),
                   list(TV = tv_image_tile,
+                       "&nbsp" = flag_image_tile,
                        score = color_tile("#ff8989", "lightgreen")))
     }
   })
@@ -603,6 +685,7 @@ server <- function(input, output, session) {
     if(scores[1] ==  scores[2] && !is.na(scores[1])) {
       return$penalties <- penalties
     }
+    return <- add_column(return, "&nbsp" = teams, .after = "TV")
     return(return)
   })
   output$game_56 <- renderFormattable({
@@ -610,10 +693,12 @@ server <- function(input, output, session) {
       formattable(game56_df(),
                   list(TV = tv_image_tile,
                        score = color_tile("yellow", "yellow"),
+                       "&nbsp" = flag_image_tile,
                        penalties = color_tile("#ff8989", "lightgreen")))
     } else {
       formattable(game56_df(),
                   list(TV = tv_image_tile,
+                       "&nbsp" = flag_image_tile,
                        score = color_tile("#ff8989", "lightgreen")))
     }
   })
@@ -631,6 +716,7 @@ server <- function(input, output, session) {
     if(scores[1] ==  scores[2] && !is.na(scores[1])) {
       return$penalties <- penalties
     }
+    return <- add_column(return, "&nbsp" = teams, .after = "TV")
     return(return)
   })
   output$game_61b <- renderFormattable({
@@ -638,10 +724,12 @@ server <- function(input, output, session) {
       formattable(game61_dfb(),
                   list(TV = tv_image_tile,
                        score = color_tile("yellow", "yellow"),
+                       "&nbsp" = flag_image_tile,
                        penalties = color_tile("#ff8989", "lightgreen")))
     } else {
       formattable(game61_dfb(),
                   list(TV = tv_image_tile,
+                       "&nbsp" = flag_image_tile,
                        score = color_tile("#ff8989", "lightgreen")))
     }
   })
@@ -659,6 +747,7 @@ server <- function(input, output, session) {
     if(scores[1] ==  scores[2] && !is.na(scores[1])) {
       return$penalties <- penalties
     }
+    return <- add_column(return, "&nbsp" = teams, .after = "TV")
     return(return)
   })
   output$game_62a <- renderFormattable({
@@ -666,10 +755,12 @@ server <- function(input, output, session) {
       formattable(game62_dfa(),
                   list(TV = tv_image_tile,
                        score = color_tile("yellow", "yellow"),
+                       "&nbsp" = flag_image_tile,
                        penalties = color_tile("#ff8989", "lightgreen")))
     } else {
       formattable(game62_dfa(),
                   list(TV = tv_image_tile,
+                       "&nbsp" = flag_image_tile,
                        score = color_tile("#ff8989", "lightgreen")))
     }
   })
@@ -688,6 +779,7 @@ server <- function(input, output, session) {
     if(scores[1] ==  scores[2] && !is.na(scores[1])) {
       return$penalties <- penalties
     }
+    return <- add_column(return, "&nbsp" = teams, .after = "TV")
     return(return)
   })
   output$game_64a <- renderFormattable({
@@ -695,10 +787,12 @@ server <- function(input, output, session) {
       formattable(game64_dfa(),
                   list(TV = tv_image_tile,
                        score = color_tile("yellow", "yellow"),
+                       "&nbsp" = flag_image_tile,
                        penalties = color_tile("#ff8989", "lightgreen")))
     } else {
       formattable(game64_dfa(),
                   list(TV = tv_image_tile,
+                       "&nbsp" = flag_image_tile,
                        score = color_tile("#ff8989", "lightgreen")))
     }
   })
@@ -717,6 +811,7 @@ server <- function(input, output, session) {
     if(scores[1] ==  scores[2] && !is.na(scores[1])) {
       return$penalties <- penalties
     }
+    return <- add_column(return, "&nbsp" = teams, .after = "TV")
     return(return)
   })
   output$game_63 <- renderFormattable({
@@ -724,10 +819,12 @@ server <- function(input, output, session) {
       formattable(game63_df(),
                   list(TV = tv_image_tile,
                        score = color_tile("yellow", "yellow"),
+                       "&nbsp" = flag_image_tile,
                        penalties = color_tile("#ff8989", "lightgreen")))
     } else {
       formattable(game63_df(),
                   list(TV = tv_image_tile,
+                       "&nbsp" = flag_image_tile,
                        score = color_tile("#ff8989", "lightgreen")))
     }
   })
